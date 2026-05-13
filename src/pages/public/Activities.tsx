@@ -23,6 +23,21 @@ const allCountries = [
 
 const defaultActivities = [
   { id: '1', region: 'Asia', country: 'Japan', contest: '18th', category: 'AWARD EVENT', title: 'Kid Showcasing Artwork', image: 'https://i.ibb.co/DH9t0m0R/Kids-and-Creativity-The-Benefits-of-Drawing-with-Children.jpg', date: '2023-11-20' },
+  { id: '2', region: 'Africa', country: 'Nigeria', contest: '19th', category: 'DRAWING WORKSHOP & EVENT', title: 'Young Thinkers at Work', image: 'https://i.ibb.co/23TzfJpM/IMG-20260513-WA0048.jpg', date: '2024-01-15' },
+  { id: '3', region: 'Europe', country: 'UK', contest: '19th', category: 'ARTWORK EXHIBITION', title: 'Creative Minds', image: 'https://i.ibb.co/7xZf8TC0/IMG-20260513-WA0049.jpg', date: '2024-02-10' },
+  { id: '4', region: 'Americas', country: 'Canada', contest: '18th', category: 'AWARD EVENT', title: 'Learning Through Art', image: 'https://i.ibb.co/vxvVFLTm/IMG-20260513-WA0050.jpg', date: '2023-11-25' },
+  { id: '5', region: 'Asia', country: 'Singapore', contest: '19th', category: 'DRAWING WORKSHOP & EVENT', title: 'Next Generation Scholars', image: 'https://i.ibb.co/4RNVG9VD/IMG-20260513-WA0051.jpg', date: '2024-03-05' },
+  { id: '6', region: 'Africa', country: 'Ghana', contest: '19th', category: 'ARTWORK EXHIBITION', title: 'Collaborative Learning', image: 'https://i.ibb.co/LdD5nrtz/IMG-20260513-WA0052.jpg', date: '2024-01-20' },
+  { id: '7', region: 'Europe', country: 'France', contest: '18th', category: 'AWARD EVENT', title: 'Focused on Success', image: 'https://i.ibb.co/CgwtC7y/IMG-20260513-WA0053.jpg', date: '2023-12-10' },
+  { id: '8', region: 'Americas', country: 'USA', contest: '19th', category: 'DRAWING WORKSHOP & EVENT', title: 'Building The Future', image: 'https://i.ibb.co/chW4M9wf/IMG-20260513-WA0054.jpg', date: '2024-02-28' },
+  { id: '9', region: 'Asia', country: 'India', contest: '19th', category: 'ARTWORK EXHIBITION', title: 'Inspiring Passion', image: 'https://i.ibb.co/Y4NDSyJM/IMG-20260513-WA0055.jpg', date: '2024-03-15' },
+  { id: '10', region: 'Africa', country: 'South Africa', contest: '18th', category: 'AWARD EVENT', title: 'Artistic Expression', image: 'https://i.ibb.co/Fby6PFR9/IMG-20260513-WA0056.jpg', date: '2023-12-20' },
+  { id: '11', region: 'Europe', country: 'Ireland', contest: '19th', category: 'DRAWING WORKSHOP & EVENT', title: 'Creative Problem Solvers', image: 'https://i.ibb.co/Xd055ZC/IMG-20260513-WA0057.jpg', date: '2024-01-10' },
+  { id: '12', region: 'Americas', country: 'Mexico', contest: '19th', category: 'ARTWORK EXHIBITION', title: 'Embracing Education', image: 'https://i.ibb.co/0R2wVhBz/IMG-20260513-WA0058.jpg', date: '2024-02-05' },
+  { id: '13', region: 'Asia', country: 'Thailand', contest: '18th', category: 'AWARD EVENT', title: 'The Power of Drawing', image: 'https://i.ibb.co/t1wpf34/IMG-20260513-WA0059.jpg', date: '2023-11-15' },
+  { id: '14', region: 'Africa', country: 'Kenya', contest: '19th', category: 'DRAWING WORKSHOP & EVENT', title: 'Joy of Creativity', image: 'https://i.ibb.co/x8dFt7QH/IMG-20260513-WA0060.jpg', date: '2024-03-01' },
+  { id: '15', region: 'Europe', country: 'Germany', contest: '19th', category: 'ARTWORK EXHIBITION', title: 'Student Excellence', image: 'https://i.ibb.co/TBCNhvnk/IMG-20260513-WA0061.jpg', date: '2024-01-25' },
+  { id: '16', region: 'Americas', country: 'Brazil', contest: '18th', category: 'AWARD EVENT', title: 'Unlocking Potential', image: 'https://i.ibb.co/9k6KsKTF/IMG-20260513-WA0062.jpg', date: '2023-12-05' }
 ];
 
 export default function Activities() {

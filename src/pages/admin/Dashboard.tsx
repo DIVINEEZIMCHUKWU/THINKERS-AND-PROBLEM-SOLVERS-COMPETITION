@@ -130,6 +130,7 @@ export default function Dashboard() {
   const [winnerCountry, setWinnerCountry] = useState('');
   const [winnerType, setWinnerType] = useState<'GRAND_PRIZES'|'SPECIAL_AWARDS'|'BEST_FINALISTS'>('GRAND_PRIZES');
   const [winnerFile, setWinnerFile] = useState<File|null>(null);
+  const [winnerImageUrls, setWinnerImageUrls] = useState('');
   const [isUploadingWinner, setIsUploadingWinner] = useState(false);
   
   // Activities state
@@ -137,6 +138,7 @@ export default function Dashboard() {
   const [activityCountry, setActivityCountry] = useState('');
   const [activityContestNumber, setActivityContestNumber] = useState('');
   const [activityFile, setActivityFile] = useState<File|null>(null);
+  const [activityImageUrls, setActivityImageUrls] = useState('');
   const [isUploadingActivity, setIsUploadingActivity] = useState(false);
   
   // Video state
@@ -151,44 +153,75 @@ export default function Dashboard() {
   const [galleryPersonName, setGalleryPersonName] = useState('');
   const [galleryCountry, setGalleryCountry] = useState('');
   const [galleryFile, setGalleryFile] = useState<File|null>(null);
+  const [galleryImageUrls, setGalleryImageUrls] = useState('');
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const [contentError, setContentError] = useState('');
 
   const handleAddWinner = async () => {
     setContentError('');
-    if (!winnerTitle || !winnerProjectName || !winnerAge || !winnerPersonName || !winnerCountry || !winnerFile) return setContentError('Please fill all fields and provide an image.');
+    if (!winnerTitle || !winnerProjectName || !winnerAge || !winnerPersonName || !winnerCountry) return setContentError('Please fill all fields.');
+    if (!winnerFile && !winnerImageUrls.trim()) return setContentError('Please provide an image file or at least one image URL.');
     setIsUploadingWinner(true);
     try {
-      const sanitizedFileName = winnerFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const fileName = `${Date.now()}_${sanitizedFileName}`;
-      const imageUrl = await handleFileUpload(winnerFile, 'tpsc-images', `winners/${fileName}`);
-      
-      const payload = { 
-        title: winnerTitle, 
-        project_name: winnerProjectName,
-        age: winnerAge,
-        person_name: winnerPersonName,
-        country: winnerCountry,
-        type: winnerType, 
-        image_url: imageUrl 
-      };
-      
-      const dbRes = await saveToSupabaseTable('winner_artwork', payload);
-      if (!dbRes.success) throw new Error(dbRes.error);
+      if (winnerFile) {
+        const sanitizedFileName = winnerFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        const imageUrl = await handleFileUpload(winnerFile, 'tpsc-images', `winners/${fileName}`);
+        
+        const payload = { 
+          title: winnerTitle, 
+          project_name: winnerProjectName,
+          age: winnerAge,
+          person_name: winnerPersonName,
+          country: winnerCountry,
+          type: winnerType, 
+          image_url: imageUrl 
+        };
+        
+        const dbRes = await saveToSupabaseTable('winner_artwork', payload);
+        if (!dbRes.success) throw new Error(dbRes.error);
+  
+        addWinnerArtwork({
+          title: winnerTitle, 
+          projectName: winnerProjectName,
+          age: winnerAge,
+          personName: winnerPersonName,
+          country: winnerCountry,
+          type: winnerType, 
+          imageUrl 
+        });
+      }
 
-      addWinnerArtwork({
-        title: winnerTitle, 
-        projectName: winnerProjectName,
-        age: winnerAge,
-        personName: winnerPersonName,
-        country: winnerCountry,
-        type: winnerType, 
-        imageUrl 
-      });
-      setWinnerTitle(''); setWinnerProjectName(''); setWinnerAge(''); setWinnerPersonName(''); setWinnerCountry(''); setWinnerFile(null);
+      if (winnerImageUrls.trim()) {
+        const urls = winnerImageUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+        for (const url of urls) {
+          const payload = { 
+            title: winnerTitle, 
+            project_name: winnerProjectName,
+            age: winnerAge,
+            person_name: winnerPersonName,
+            country: winnerCountry,
+            type: winnerType, 
+            image_url: url 
+          };
+          const dbRes = await saveToSupabaseTable('winner_artwork', payload);
+          if (!dbRes.success) throw new Error(dbRes.error);
+    
+          addWinnerArtwork({
+            title: winnerTitle, 
+            projectName: winnerProjectName,
+            age: winnerAge,
+            personName: winnerPersonName,
+            country: winnerCountry,
+            type: winnerType, 
+            imageUrl: url 
+          });
+        }
+      }
+      setWinnerTitle(''); setWinnerProjectName(''); setWinnerAge(''); setWinnerPersonName(''); setWinnerCountry(''); setWinnerFile(null); setWinnerImageUrls('');
     } catch (e: any) {
-      setContentError(`Error uploading file: ${e.message}`);
+      setContentError(`Error adding winner: ${e.message}`);
     } finally {
       setIsUploadingWinner(false);
     }
@@ -196,31 +229,55 @@ export default function Dashboard() {
 
   const handleAddActivity = async () => {
     setContentError('');
-    if (!activityTitle || !activityCountry || !activityContestNumber || !activityFile) return setContentError('Please fill all fields and provide an image.');
+    if (!activityTitle || !activityCountry || !activityContestNumber) return setContentError('Please fill all fields.');
+    if (!activityFile && !activityImageUrls.trim()) return setContentError('Please provide an image file or at least one image URL.');
     setIsUploadingActivity(true);
     try {
-      const sanitizedFileName = activityFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const fileName = `${Date.now()}_${sanitizedFileName}`;
-      const imageUrl = await handleFileUpload(activityFile, 'tpsc-images', `activities/${fileName}`);
-      
-      const payload = { 
-        title: activityTitle, 
-        country: activityCountry,
-        contest_number: activityContestNumber,
-        image_url: imageUrl 
-      };
-      const dbRes = await saveToSupabaseTable('activities', payload);
-      if (!dbRes.success) throw new Error(dbRes.error);
+      if (activityFile) {
+        const sanitizedFileName = activityFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        const imageUrl = await handleFileUpload(activityFile, 'tpsc-images', `activities/${fileName}`);
+        
+        const payload = { 
+          title: activityTitle, 
+          country: activityCountry,
+          contest_number: activityContestNumber,
+          image_url: imageUrl 
+        };
+        const dbRes = await saveToSupabaseTable('activities', payload);
+        if (!dbRes.success) throw new Error(dbRes.error);
+  
+        addActivity({ 
+          title: activityTitle, 
+          country: activityCountry,
+          contestNumber: activityContestNumber,
+          imageUrl 
+        });
+      }
 
-      addActivity({ 
-        title: activityTitle, 
-        country: activityCountry,
-        contestNumber: activityContestNumber,
-        imageUrl 
-      });
-      setActivityTitle(''); setActivityCountry(''); setActivityContestNumber(''); setActivityFile(null);
+      if (activityImageUrls.trim()) {
+        const urls = activityImageUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+        for (const url of urls) {
+          const payload = { 
+            title: activityTitle, 
+            country: activityCountry,
+            contest_number: activityContestNumber,
+            image_url: url 
+          };
+          const dbRes = await saveToSupabaseTable('activities', payload);
+          if (!dbRes.success) throw new Error(dbRes.error);
+    
+          addActivity({ 
+            title: activityTitle, 
+            country: activityCountry,
+            contestNumber: activityContestNumber,
+            imageUrl: url 
+          });
+        }
+      }
+      setActivityTitle(''); setActivityCountry(''); setActivityContestNumber(''); setActivityFile(null); setActivityImageUrls('');
     } catch (e: any) {
-      setContentError(`Error uploading file: ${e.message}`);
+      setContentError(`Error adding activities: ${e.message}`);
     } finally {
       setIsUploadingActivity(false);
     }
@@ -243,35 +300,63 @@ export default function Dashboard() {
 
   const handleAddGallery = async () => {
     setContentError('');
-    if (!galleryTitle || !galleryProjectName || !galleryAge || !galleryPersonName || !galleryCountry || !galleryFile) return setContentError('Please fill all fields and provide an image.');
+    if (!galleryTitle || !galleryProjectName || !galleryAge || !galleryPersonName || !galleryCountry) return setContentError('Please fill all fields.');
+    if (!galleryFile && !galleryImageUrls.trim()) return setContentError('Please provide an image file or at least one image URL.');
     setIsUploadingGallery(true);
     try {
-      const sanitizedFileName = galleryFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const fileName = `${Date.now()}_${sanitizedFileName}`;
-      const imageUrl = await handleFileUpload(galleryFile, 'tpsc-images', `gallery/${fileName}`);
-      
-      const payload = { 
-        title: galleryTitle, 
-        project_name: galleryProjectName,
-        age: galleryAge,
-        person_name: galleryPersonName,
-        country: galleryCountry,
-        image_url: imageUrl 
-      };
-      const dbRes = await saveToSupabaseTable('artwork_gallery', payload);
-      if (!dbRes.success) throw new Error(dbRes.error);
+      if (galleryFile) {
+        const sanitizedFileName = galleryFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        const imageUrl = await handleFileUpload(galleryFile, 'tpsc-images', `gallery/${fileName}`);
+        
+        const payload = { 
+          title: galleryTitle, 
+          project_name: galleryProjectName,
+          age: galleryAge,
+          person_name: galleryPersonName,
+          country: galleryCountry,
+          image_url: imageUrl 
+        };
+        const dbRes = await saveToSupabaseTable('artwork_gallery', payload);
+        if (!dbRes.success) throw new Error(dbRes.error);
+  
+        addArtworkGallery({ 
+          title: galleryTitle, 
+          projectName: galleryProjectName,
+          age: galleryAge,
+          personName: galleryPersonName,
+          country: galleryCountry,
+          imageUrl 
+        });
+      }
 
-      addArtworkGallery({ 
-        title: galleryTitle, 
-        projectName: galleryProjectName,
-        age: galleryAge,
-        personName: galleryPersonName,
-        country: galleryCountry,
-        imageUrl 
-      });
-      setGalleryTitle(''); setGalleryProjectName(''); setGalleryAge(''); setGalleryPersonName(''); setGalleryCountry(''); setGalleryFile(null);
+      if (galleryImageUrls.trim()) {
+        const urls = galleryImageUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+        for (const url of urls) {
+          const payload = { 
+            title: galleryTitle, 
+            project_name: galleryProjectName,
+            age: galleryAge,
+            person_name: galleryPersonName,
+            country: galleryCountry,
+            image_url: url 
+          };
+          const dbRes = await saveToSupabaseTable('artwork_gallery', payload);
+          if (!dbRes.success) throw new Error(dbRes.error);
+    
+          addArtworkGallery({ 
+            title: galleryTitle, 
+            projectName: galleryProjectName,
+            age: galleryAge,
+            personName: galleryPersonName,
+            country: galleryCountry,
+            imageUrl: url 
+          });
+        }
+      }
+      setGalleryTitle(''); setGalleryProjectName(''); setGalleryAge(''); setGalleryPersonName(''); setGalleryCountry(''); setGalleryFile(null); setGalleryImageUrls('');
     } catch(e: any) {
-      setContentError(`Error uploading file: ${e.message}`);
+      setContentError(`Error adding gallery artwork: ${e.message}`);
     } finally {
       setIsUploadingGallery(false);
     }
@@ -605,7 +690,7 @@ export default function Dashboard() {
                    </div>
                    <div>
                      <Label>Artwork Image (Max 5MB)</Label>
-                     <div className="mt-1">
+                     <div className="mt-1 space-y-3">
                        {winnerFile ? (
                           <div className="flex items-center gap-2 text-sm border p-2 rounded">
                             <span className="truncate flex-1">{winnerFile.name}</span>
@@ -619,6 +704,13 @@ export default function Dashboard() {
                             }} />
                           </Label>
                        )}
+                       <div>
+                         <Label className="text-xs text-muted-foreground mb-1 block">Or paste Image URLs</Label>
+                         <textarea 
+                           className="w-full min-h-[100px] flex rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                           placeholder="https://... (Separate multiple URLs with newlines or commas)" value={winnerImageUrls} onChange={e => setWinnerImageUrls(e.target.value)} 
+                         />
+                       </div>
                      </div>
                    </div>
                    <Button onClick={handleAddWinner} className="w-full" disabled={isUploadingWinner}>
@@ -679,7 +771,7 @@ export default function Dashboard() {
                    </div>
                    <div>
                      <Label>Artwork Image (Max 5MB)</Label>
-                     <div className="mt-1">
+                     <div className="mt-1 space-y-3">
                        {galleryFile ? (
                           <div className="flex items-center gap-2 text-sm border p-2 rounded">
                             <span className="truncate flex-1">{galleryFile.name}</span>
@@ -693,6 +785,13 @@ export default function Dashboard() {
                             }} />
                           </Label>
                        )}
+                       <div>
+                         <Label className="text-xs text-muted-foreground mb-1 block">Or paste Image URLs</Label>
+                         <textarea 
+                           className="w-full min-h-[100px] flex rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                           placeholder="https://... (Separate multiple URLs with newlines or commas)" value={galleryImageUrls} onChange={e => setGalleryImageUrls(e.target.value)} 
+                         />
+                       </div>
                      </div>
                    </div>
                    <Button onClick={handleAddGallery} className="w-full" disabled={isUploadingGallery}>
@@ -742,7 +841,7 @@ export default function Dashboard() {
                    </div>
                    <div>
                      <Label>Activity Image (Max 5MB)</Label>
-                     <div className="mt-1">
+                     <div className="mt-1 space-y-3">
                        {activityFile ? (
                           <div className="flex items-center gap-2 text-sm border p-2 rounded">
                             <span className="truncate flex-1">{activityFile.name}</span>
@@ -756,6 +855,13 @@ export default function Dashboard() {
                             }} />
                           </Label>
                        )}
+                       <div>
+                         <Label className="text-xs text-muted-foreground mb-1 block">Or paste Image URLs</Label>
+                         <textarea 
+                           className="w-full min-h-[100px] flex rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                           placeholder="https://... (Separate multiple URLs with newlines or commas)" value={activityImageUrls} onChange={e => setActivityImageUrls(e.target.value)} 
+                         />
+                       </div>
                      </div>
                    </div>
                    <Button onClick={handleAddActivity} className="w-full" disabled={isUploadingActivity}>

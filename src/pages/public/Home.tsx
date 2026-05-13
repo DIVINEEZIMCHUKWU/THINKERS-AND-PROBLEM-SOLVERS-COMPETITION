@@ -15,18 +15,18 @@ const homeHeroImages = [
 const kidsImages = [
   {
     src: "https://i.ibb.co/DH9t0m0R/Kids-and-Creativity-The-Benefits-of-Drawing-with-Children.jpg",
-    alt: "Kids and Creativity The Benefits of Drawing with Children",
-    title: "Kids and Creativity The Benefits of Drawing with Children"
+    alt: "Kids and Creativity",
+    title: "Kids and Creativity"
   },
   {
     src: "https://i.ibb.co/wxbXzJv/Foster-creativity-with-easy-DIY-crafts-like-sidewalk-chalk-art-and-fun-fall-activities.jpg",
-    alt: "Foster creativity with easy DIY crafts like sidewalk chalk art and fun fall activities",
-    title: "Foster creativity with easy DIY crafts like sidewalk chalk art and fun fall activities"
+    alt: "Foster creativity",
+    title: "Foster creativity"
   },
   {
     src: "https://i.ibb.co/VWVvXJyk/Crafting-Magic-with-Markers-Pencils.jpg",
-    alt: "Crafting Magic with Markers Pencils",
-    title: "Crafting Magic with Markers Pencils"
+    alt: "Crafting Magic",
+    title: "Crafting Magic"
   },
   {
     src: "https://i.ibb.co/QF8HzRfZ/Building-Self-Confidence.jpg",
@@ -35,14 +35,35 @@ const kidsImages = [
   },
   {
     src: "https://i.ibb.co/SX5YznQT/Is-there-anything-more-magical-than-the-naivety-of.jpg",
-    alt: "Is there anything more magical than the naivety of",
-    title: "Is there anything more magical than the naivety of"
+    alt: "Magical Naivety",
+    title: "Magical Naivety"
   },
   {
     src: "https://i.ibb.co/W4Wq9mVR/Blogger.jpg",
     alt: "Blogger",
     title: "Blogger"
   }
+];
+
+const inspiringImages = [
+  "https://i.ibb.co/23TzfJpM/IMG-20260513-WA0048.jpg",
+  "https://i.ibb.co/7xZf8TC0/IMG-20260513-WA0049.jpg",
+  "https://i.ibb.co/vxvVFLTm/IMG-20260513-WA0050.jpg",
+  "https://i.ibb.co/4RNVG9VD/IMG-20260513-WA0051.jpg",
+  "https://i.ibb.co/LdD5nrtz/IMG-20260513-WA0052.jpg",
+  "https://i.ibb.co/CgwtC7y/IMG-20260513-WA0053.jpg",
+  "https://i.ibb.co/chW4M9wf/IMG-20260513-WA0054.jpg",
+  "https://i.ibb.co/Y4NDSyJM/IMG-20260513-WA0055.jpg",
+  "https://i.ibb.co/Fby6PFR9/IMG-20260513-WA0056.jpg",
+  "https://i.ibb.co/Xd055ZC/IMG-20260513-WA0057.jpg",
+  "https://i.ibb.co/0R2wVhBz/IMG-20260513-WA0058.jpg",
+  "https://i.ibb.co/t1wpf34/IMG-20260513-WA0059.jpg",
+  "https://i.ibb.co/x8dFt7QH/IMG-20260513-WA0060.jpg",
+  "https://i.ibb.co/TBCNhvnk/IMG-20260513-WA0061.jpg",
+  "https://i.ibb.co/9k6KsKTF/IMG-20260513-WA0062.jpg",
+  "https://i.ibb.co/tPYcKW7x/IMG-20260513-WA0063.jpg",
+  "https://i.ibb.co/GfhRH2rm/IMG-20260513-WA0064.jpg",
+  "https://i.ibb.co/4ZCY4stR/IMG-20260513-WA0065.jpg"
 ];
 
 export default function Home() {
@@ -110,6 +131,17 @@ export default function Home() {
                </div>
              ))}
            </motion.div>
+         </div>
+
+         {/* Second strip for inspiring images, horizontal scroll */}
+         <div className="w-full overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+           <div className="flex gap-4 px-4 md:px-8 w-max snap-x snap-mandatory">
+             {inspiringImages.map((src, idx) => (
+               <div key={`inspire-${idx}`} className="w-[180px] md:w-[220px] aspect-square rounded-2xl overflow-hidden shrink-0 shadow-lg snap-center">
+                 <img src={src} alt={`Inspiring Activity ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" />
+               </div>
+             ))}
+           </div>
          </div>
       </div>
 
@@ -462,7 +494,7 @@ export default function Home() {
 
           <div className="mt-12 md:mt-16 text-center">
             <p className="text-base md:text-lg font-medium">To explore partnership opportunities, contact us at:</p>
-            <a href="mailto:thinkersandproblemsolvers@gmail.com" className="text-primary font-bold text-sm sm:text-base md:text-2xl hover:text-accent hover:underline hover:scale-105 transition-all mt-2 inline-block break-all">thinkersandproblemsolvers@gmail.com</a>
+            <a href="mailto:worldthinkerscompetition@gmail.com" className="text-primary font-bold text-sm sm:text-base md:text-2xl hover:text-accent hover:underline hover:scale-105 transition-all mt-2 inline-block break-all">worldthinkerscompetition@gmail.com</a>
           </div>
         </div>
       </section>
@@ -578,7 +610,7 @@ export default function Home() {
             <div className="mt-16 text-center bg-background/80 p-8 rounded-3xl border border-border shadow-md">
               <h4 className="text-xl font-bold mb-4 text-primary">Contact us today for any of these services:</h4>
               <p className="text-lg md:text-2xl font-medium mb-2">+234 810 383 3239</p>
-              <a href="mailto:thinkersandproblemsolvers@gmail.com" className="text-accent hover:underline font-medium break-all">thinkersandproblemsolvers@gmail.com</a>
+              <a href="mailto:worldthinkerscompetition@gmail.com" className="text-accent hover:underline font-medium break-all">worldthinkerscompetition@gmail.com</a>
             </div>
           </div>
         </div>
@@ -671,7 +703,7 @@ export default function Home() {
                 </div>
                 <div className="text-center mt-6">
                    <p className="font-medium mb-2">Interested in our setups or training?</p>
-                   <a href="mailto:thinkersandproblemsolvers@gmail.com" className="text-accent hover:underline font-bold">Contact us today</a>
+                   <a href="mailto:worldthinkerscompetition@gmail.com" className="text-accent hover:underline font-bold">Contact us today</a>
                 </div>
               </CardContent>
             </Card>

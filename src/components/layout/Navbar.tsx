@@ -52,6 +52,7 @@ export default function Navbar() {
               <span className="sr-only">Toggle theme</span>
             </Button>
             <Link to="/admin" className={buttonVariants({ variant: "outline", className: "text-xs font-bold uppercase tracking-widest" })}>Admin</Link>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSc-1lwjO25qj1Ji9VG4pzAZESvfa3GE2igJ8KZyQjmSeCgf2Q/viewform" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "destructive", className: "rounded-full text-xs font-bold uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 hover:text-white" })}>Supervisors</a>
             <Link to="/register/student" className={buttonVariants({ className: "rounded-full text-xs font-bold uppercase tracking-widest" })}>Register</Link>
           </div>
 
@@ -84,6 +85,7 @@ export default function Navbar() {
             </div>
             <div className="flex flex-col gap-3 pt-4">
               <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className={buttonVariants({ variant: "outline", className: "w-full justify-center text-xs font-bold uppercase tracking-widest py-6" })}>Admin Console</Link>
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSc-1lwjO25qj1Ji9VG4pzAZESvfa3GE2igJ8KZyQjmSeCgf2Q/viewform" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "destructive", className: "w-full justify-center rounded-full text-xs font-bold uppercase tracking-widest py-6 bg-red-600 text-white hover:bg-red-700 hover:text-white" })}>Supervisors</a>
               <Link to="/register/student" onClick={() => setMobileMenuOpen(false)} className={buttonVariants({ className: "w-full justify-center rounded-full text-xs font-bold uppercase tracking-widest py-6" })}>Register Now</Link>
             </div>
           </div>
