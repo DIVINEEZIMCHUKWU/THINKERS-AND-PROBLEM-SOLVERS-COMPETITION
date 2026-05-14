@@ -27,17 +27,17 @@ export default function Navbar() {
       <div className="h-1.5 w-full bg-gradient-to-r from-destructive via-accent to-primary z-50 relative" />
 
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4 sm:px-8">
-          <div className="flex items-center gap-8">
+        <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 sm:px-8 py-3">
+          <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-3 shrink-0">
-               <img src="https://i.ibb.co/XxkMsnL9/IMG-20260508-WA0026.jpg" alt="Thinkers and Problem Solvers Logo" className="h-10 w-auto rounded" />
+               <img src="/Images/Logo.jpg" alt="Thinkers and Problem Solvers Logo" className="h-10 w-auto rounded" />
             </Link>
-            <div className="hidden lg:flex gap-4 xl:gap-6 flex-wrap">
+            <div className="hidden lg:flex gap-3 xl:gap-4 items-center">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className="text-[10px] xl:text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center"
+                  className="text-[10px] xl:text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {link.label}
                 </Link>
@@ -45,7 +45,7 @@ export default function Navbar() {
             </div>
           </div>
           
-          <div className="hidden md:flex items-center gap-4 shrink-0">
+          <div className="hidden md:flex items-center gap-3 ml-auto">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
