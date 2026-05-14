@@ -51,6 +51,7 @@ export default function Navbar() {
               <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
             </Button>
+            <a href="/Images/TPSC%20REGISTRATION%20FORM.pdf" download className={buttonVariants({ className: "rounded-full text-xs font-bold uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 hover:text-white" })}>Download Form</a>
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSc-1lwjO25qj1Ji9VG4pzAZESvfa3GE2igJ8KZyQjmSeCgf2Q/viewform" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "destructive", className: "rounded-full text-xs font-bold uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 hover:text-white" })}>Supervisors</a>
             <Link to="/register/student" className={buttonVariants({ className: "rounded-full text-xs font-bold uppercase tracking-widest" })}>Register</Link>
           </div>
@@ -83,6 +84,7 @@ export default function Navbar() {
               ))}
             </div>
             <div className="flex flex-col gap-3 pt-4">
+              <a href="/Images/TPSC%20REGISTRATION%20FORM.pdf" download className={buttonVariants({ className: "w-full justify-center rounded-full text-xs font-bold uppercase tracking-widest py-6 bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 text-white shadow-sm hover:shadow-lg" })}>Download Form</a>
               <a href="https://docs.google.com/forms/d/e/1FAIpQLSc-1lwjO25qj1Ji9VG4pzAZESvfa3GE2igJ8KZyQjmSeCgf2Q/viewform" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "destructive", className: "w-full justify-center rounded-full text-xs font-bold uppercase tracking-widest py-6 bg-red-600 text-white hover:bg-red-700 hover:text-white" })}>Supervisors</a>
               <Link to="/register/student" onClick={() => setMobileMenuOpen(false)} className={buttonVariants({ className: "w-full justify-center rounded-full text-xs font-bold uppercase tracking-widest py-6" })}>Register Now</Link>
             </div>

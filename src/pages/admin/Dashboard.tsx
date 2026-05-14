@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Users, GraduationCap, DollarSign, Activity, Check, Download, Trash2, Key, UploadCloud, Link as LinkIcon, Image as ImageIcon, Video, Plus, Database } from 'lucide-react'
+import { Users, GraduationCap, DollarSign, Activity, Check, Download, Trash2, Key, UploadCloud, Link as LinkIcon, Image as ImageIcon, Video, Plus, Database, Calendar } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -155,6 +155,16 @@ export default function Dashboard() {
   const [galleryFile, setGalleryFile] = useState<File|null>(null);
   const [galleryImageUrls, setGalleryImageUrls] = useState('');
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+
+  // Upcoming Events state
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventType, setEventType] = useState<'competition'|'festival'|'exhibition'>('competition');
+  const [eventStatus, setEventStatus] = useState<'upcoming'|'ongoing'|'completed'|'cancelled'>('upcoming');
+  const [eventFile, setEventFile] = useState<File|null>(null);
+  const [eventImageUrls, setEventImageUrls] = useState('');
+  const [isUploadingEvent, setIsUploadingEvent] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   const [contentError, setContentError] = useState('');
 
@@ -361,6 +371,85 @@ export default function Dashboard() {
       setIsUploadingGallery(false);
     }
   };
+
+  const handleAddEvent = async () => {
+    setContentError('');
+    if (!eventTitle || !eventDescription) return setContentError('Please fill in title and description.');
+    if (!eventFile && !eventImageUrls.trim()) return setContentError('Please provide a flyer image file or URL.');
+    
+    setIsUploadingEvent(true);
+    try {
+      let uploadedUrl = '';
+      
+      if (eventFile) {
+        const sanitizedFileName = eventFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        uploadedUrl = await handleFileUpload(eventFile, 'tpsc-images', `events/${fileName}`);
+        
+        const payload = {
+          title: eventTitle,
+          description: eventDescription,
+          flyer_url: uploadedUrl,
+          event_type: eventType,
+          status: eventStatus
+        };
+        
+        const dbRes = await saveToSupabaseTable('upcoming_events', payload);
+        if (!dbRes.success) throw new Error(dbRes.error);
+        
+        setUpcomingEvents([...upcomingEvents, { title: eventTitle, description: eventDescription, flyer_url: uploadedUrl, event_type: eventType, status: eventStatus }]);
+      }
+
+      if (eventImageUrls.trim()) {
+        const urls = eventImageUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+        for (const url of urls) {
+          const payload = {
+            title: eventTitle,
+            description: eventDescription,
+            flyer_url: url,
+            event_type: eventType,
+            status: eventStatus
+          };
+          
+          const dbRes = await saveToSupabaseTable('upcoming_events', payload);
+          if (!dbRes.success) throw new Error(dbRes.error);
+          
+          setUpcomingEvents([...upcomingEvents, { title: eventTitle, description: eventDescription, flyer_url: url, event_type: eventType, status: eventStatus }]);
+        }
+      }
+
+      setEventTitle(''); setEventDescription(''); setEventFile(null); setEventImageUrls(''); setEventStatus('upcoming');
+    } catch (e: any) {
+      setContentError(`Error adding event: ${e.message}`);
+    } finally {
+      setIsUploadingEvent(false);
+    }
+  };
+
+  const handleDeleteEvent = async (event: any) => {
+    try {
+      const res = await deleteFromSupabaseTable('upcoming_events', 'title', event.title);
+      if (res.success) {
+        setUpcomingEvents(upcomingEvents.filter(e => e.title !== event.title));
+      }
+    } catch (e: any) {
+      setContentError(`Error deleting event: ${e.message}`);
+    }
+  };
+
+  // Load upcoming events on mount
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const { data, error } = await supabase.from('upcoming_events').select('*');
+        if (error) throw error;
+        setUpcomingEvents(data || []);
+      } catch (e) {
+        console.error('Failed to load events:', e);
+      }
+    };
+    loadEvents();
+  }, []);
 
   const totalRegistered = students.length;
   const uniqueSchools = new Set(students.map(s => s.schoolName)).size;
@@ -930,6 +1019,115 @@ export default function Dashboard() {
                              <p className="text-[10px] text-muted-foreground truncate">{item.videoUrl}</p>
                            </div>
                            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDeleteVideo(item)}><Trash2 className="w-4 h-4" /></Button>
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Events Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5" /> Upcoming Events</CardTitle>
+                <CardDescription>Add event flyers and manage upcoming competitions, festivals, and exhibitions.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                   <div>
+                     <Label>Event Title</Label>
+                     <Input placeholder="E.g., International Contest 2026" value={eventTitle} onChange={e => setEventTitle(e.target.value)} />
+                   </div>
+                   <div>
+                     <Label>Description</Label>
+                     <textarea 
+                       placeholder="Brief description of the event..." 
+                       value={eventDescription} 
+                       onChange={e => setEventDescription(e.target.value)}
+                       className="w-full px-3 py-2 border rounded-md text-sm bg-background"
+                       rows={3}
+                     />
+                   </div>
+                   <div className="grid grid-cols-2 gap-2">
+                     <div>
+                       <Label>Event Type</Label>
+                       <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="competition">Competition</SelectItem>
+                           <SelectItem value="festival">Festival</SelectItem>
+                           <SelectItem value="exhibition">Exhibition</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div>
+                       <Label>Status</Label>
+                       <Select value={eventStatus} onValueChange={(val: any) => setEventStatus(val)}>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="upcoming">Upcoming</SelectItem>
+                           <SelectItem value="ongoing">Ongoing</SelectItem>
+                           <SelectItem value="completed">Completed</SelectItem>
+                           <SelectItem value="cancelled">Cancelled</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   </div>
+                   <div>
+                     <Label>Event Flyer Image (Max 5MB)</Label>
+                     <div className="mt-1 space-y-3">
+                       {eventFile ? (
+                          <div className="flex items-center gap-2 text-sm border p-2 rounded">
+                            <span className="truncate flex-1">{eventFile.name}</span>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setEventFile(null)}><Trash2 className="w-4 h-4"/></Button>
+                          </div>
+                       ) : (
+                          <Label className="flex items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 rounded-md text-sm font-medium cursor-pointer shadow-sm transition-colors">
+                            <UploadCloud className="w-4 h-4" /> Upload Flyer
+                            <input type="file" accept="image/*" className="hidden" onChange={e => {
+                              if(e.target.files && e.target.files[0]) setEventFile(e.target.files[0]);
+                            }} />
+                          </Label>
+                       )}
+                     </div>
+                   </div>
+                   <div>
+                     <Label>Or Paste Image URLs (one per line)</Label>
+                     <textarea 
+                       placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg" 
+                       value={eventImageUrls} 
+                       onChange={e => setEventImageUrls(e.target.value)}
+                       className="w-full px-3 py-2 border rounded-md text-sm bg-background font-mono"
+                       rows={3}
+                     />
+                   </div>
+                   
+                   <Button onClick={handleAddEvent} disabled={isUploadingEvent} className="w-full"><Plus className="w-4 h-4 mr-2"/> {isUploadingEvent ? 'Adding...' : 'Add Event'}</Button>
+                </div>
+                
+                {upcomingEvents.length > 0 && (
+                  <div className="mt-6 border-t pt-4">
+                    <h4 className="text-sm font-medium mb-3">Saved Events ({upcomingEvents.length})</h4>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                       {upcomingEvents.map((item, idx) => (
+                         <div key={idx} className="flex items-start gap-3 border p-3 rounded bg-muted/20">
+                           {item.flyer_url && (
+                             <img src={item.flyer_url} alt={item.title} className="w-16 h-16 object-cover rounded" />
+                           )}
+                           <div className="flex-1 overflow-hidden min-w-0">
+                             <p className="text-sm font-medium truncate">{item.title}</p>
+                             <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                             <div className="flex gap-2 mt-1">
+                               <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{item.event_type}</span>
+                               <span className="text-xs bg-blue-600/10 px-2 py-0.5 rounded text-blue-600">{item.status}</span>
+                             </div>
+                           </div>
+                           <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0" onClick={() => handleDeleteEvent(item)}><Trash2 className="w-4 h-4" /></Button>
                          </div>
                        ))}
                     </div>

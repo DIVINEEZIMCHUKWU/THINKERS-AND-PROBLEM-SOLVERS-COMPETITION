@@ -1,9 +1,12 @@
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle } from 'lucide-react';
+import { X, Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle } from 'lucide-react';
 import HeroSlider from '@/components/common/HeroSlider';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 const homeHeroImages = [
   "https://i.ibb.co/TqqGThfL/Chalkboard-Art-for-Little-Creators.jpg",
@@ -67,6 +70,31 @@ const inspiringImages = [
 ];
 
 export default function Home() {
+  const [selectedEvent, setSelectedEvent] = useState<{ title: string; description: string; flyer_url: string } | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('upcoming_events')
+          .select('*')
+          .eq('status', 'upcoming')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setUpcomingEvents(data || []);
+      } catch (err) {
+        console.error('Failed to load upcoming events:', err);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
       {/* HERO SECTION */}
@@ -110,6 +138,81 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* UPCOMING EVENTS SECTION */}
+      <section className="py-16 md:py-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50">
+        <div className="container mx-auto px-4 sm:px-8">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4">Upcoming Events</h2>
+            <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">Check out our latest competitions and events happening soon.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {upcomingEvents.map((event, idx) => (
+              <motion.div
+                key={event.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                onClick={() => setSelectedEvent(event)}
+              >
+                <Card className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col border-none cursor-pointer group">
+                  <div className="relative w-full h-64 md:h-72 overflow-hidden bg-muted">
+                    <img 
+                      src={event.flyer_url || event.flyer} 
+                      alt={event.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-white font-bold text-lg">Click to view details</span>
+                    </div>
+                  </div>
+                  <CardContent className="p-6 md:p-8 flex-1 flex flex-col">
+                    <h3 className="text-xl md:text-2xl font-bold mb-2">{event.title}</h3>
+                    <p className="text-sm md:text-base text-muted-foreground">{event.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Event Details Modal */}
+      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+        <DialogContent className="max-w-4xl w-full p-0 border-none overflow-y-auto max-h-[90vh]">
+          {selectedEvent && (
+            <>
+              <DialogHeader className="sr-only">
+                <DialogTitle>{selectedEvent.title}</DialogTitle>
+              </DialogHeader>
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="absolute right-4 top-4 z-10 rounded-lg p-2 bg-background/80 hover:bg-background transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-full">
+                <img 
+                  src={selectedEvent.flyer_url || selectedEvent.flyer} 
+                  alt={selectedEvent.title}
+                  className="w-full h-auto object-cover"
+                />
+                <div className="p-8 bg-background">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4">{selectedEvent.title}</h2>
+                  <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{selectedEvent.description}</p>
+                  <div className="flex gap-4 pt-6 border-t">
+                    <Link to="/register/student" className={buttonVariants({ size: "lg", className: "rounded-lg" })}>Register Now</Link>
+                    <button onClick={() => setSelectedEvent(null)} className={buttonVariants({ size: "lg", variant: "outline", className: "rounded-lg" })}>Close</button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* IMAGE SHOWCASE STRIP */}
       <div className="w-full bg-slate-900 py-10 md:py-12 overflow-hidden flex flex-col gap-6">
