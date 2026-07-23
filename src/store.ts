@@ -22,8 +22,11 @@ export type Student = {
   gender: string;
   country: string;
   state: string;
+  lga: string;
   schoolName: string;
-  category: string;
+  registrationCategory: string;
+  level: string;
+  studentClass: string;
   passportUrl: string;
   paymentProofUrl: string;
   registeredAt: string;

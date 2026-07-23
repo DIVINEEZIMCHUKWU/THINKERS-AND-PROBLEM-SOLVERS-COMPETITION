@@ -580,7 +580,8 @@ export default function Dashboard() {
                         <TableHead>Student Name</TableHead>
                         <TableHead>School</TableHead>
                         <TableHead>Category</TableHead>
-                        <TableHead>Country</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead>Country/State</TableHead>
                         <TableHead className="text-right">Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -590,8 +591,9 @@ export default function Dashboard() {
                           <TableCell className="font-mono text-xs">{item.registrationNumber}</TableCell>
                           <TableCell className="font-medium">{item.fullName}</TableCell>
                           <TableCell>{item.schoolName}</TableCell>
-                          <TableCell>{item.category}</TableCell>
-                          <TableCell>{item.country}</TableCell>
+                          <TableCell>{item.registrationCategory}</TableCell>
+                          <TableCell>{item.level}</TableCell>
+                          <TableCell>{item.country}{item.state && ` / ${item.state}`}</TableCell>
                           <TableCell className="text-right">
                             <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${item.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                               {item.status}
@@ -669,6 +671,8 @@ export default function Dashboard() {
                           <TableHead className="pl-6">Reg Number</TableHead>
                           <TableHead>Student Details</TableHead>
                           <TableHead>Category</TableHead>
+                          <TableHead>Level & Class</TableHead>
+                          <TableHead>Location</TableHead>
                           <TableHead className="text-right pr-6">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -697,8 +701,16 @@ export default function Dashboard() {
                             </TableCell>
                             <TableCell>
                                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs bg-muted/30">
-                                 {item.category}
+                                 {item.registrationCategory}
                                </span>
+                            </TableCell>
+                            <TableCell>
+                               <div className="text-sm font-medium">{item.level}</div>
+                               <div className="text-xs text-muted-foreground">{item.studentClass}</div>
+                            </TableCell>
+                            <TableCell>
+                               <div className="text-sm">{item.country}</div>
+                               <div className="text-xs text-muted-foreground">{item.state}{item.lga && ` / ${item.lga}`}</div>
                             </TableCell>
                             <TableCell className="text-right pr-6">
                                <div className="flex justify-end items-center gap-2">

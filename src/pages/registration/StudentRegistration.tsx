@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, UploadCloud, Info, Plus, Trash2, FileSpreadsheet, MessageCircle } from 'lucide-react'
 import { useAppStore } from '@/store'
 import * as XLSX from 'xlsx'
+import { countries, nigerianStates, registrationCategories, studentLevels, classOptions } from '@/data/locations'
 
 import { uploadFileToSupabase, saveToSupabaseTable } from '@/lib/supabase'
 
@@ -37,25 +38,24 @@ const studentSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   dob: z.string().min(1, "Date of birth is required"),
   gender: z.string().min(1, "Gender is required"),
-  category: z.string().min(1, "Please select a category"),
+  country: z.string().min(1, "Country is required"),
+  state: z.string().min(1, "State/Province is required"),
+  lga: z.string().optional(),
+  registrationCategory: z.string().min(1, "Please select a registration category"),
+  level: z.string().min(1, "Please select a level"),
+  studentClass: z.string().min(1, "Please select a class"),
   passportFileBase64: z.string().optional(),
   passportFileName: z.string().optional()
 })
 
 const formSchema = z.object({
-  schoolName: z.string().min(2, "School name is required"),
-  country: z.string().min(1, "Country is required"),
-  state: z.string().min(1, "State is required"),
-  contactName: z.string().min(2, "Contact name is required"),
-  contactPhone: z.string().min(5, "Phone number is required"),
-  email: z.string().email("Invalid email address"),
-  paymentProofBase64: z.string().optional(),
+  schoolName: z.string().min(2, "School/Organization name is required"),
+  paymentProofBase64: z.string().min(1, "Payment invoice is required"),
   paymentProofFileName: z.string().optional(),
   students: z.array(studentSchema).min(1, "At least one student must be added"),
 })
 
 export default function StudentRegistration() {
-  const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingFilesCount, setUploadingFilesCount] = useState(0)
   const [successData, setSuccessData] = useState<{count: number, regNumbers: string[]}>({ count: 0, regNumbers: [] })
@@ -65,7 +65,7 @@ export default function StudentRegistration() {
   const { register, control, handleSubmit, trigger, formState: { errors }, setValue, watch } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      students: [{ fullName: '', dob: '', gender: '', category: '', passportFileBase64: '', passportFileName: '' }],
+      students: [{ fullName: '', dob: '', gender: '', country: '', state: '', lga: '', registrationCategory: '', level: '', studentClass: '', passportFileBase64: '', passportFileName: '' }],
       paymentProofBase64: '',
       paymentProofFileName: ''
     }
@@ -181,10 +181,13 @@ export default function StudentRegistration() {
           full_name: s.fullName,
           dob: s.dob,
           gender: s.gender,
-          country: data.country,
-          state: data.state,
+          country: s.country,
+          state: s.state,
+          lga: s.lga || '',
           school_name: data.schoolName,
-          category: s.category,
+          registration_category: s.registrationCategory,
+          level: s.level,
+          student_class: s.studentClass,
           passport_url: s.passportFileBase64 || 'https://i.ibb.co/C0bXZn0k/placeholder_avatar.jpg',
           payment_proof_url: data.paymentProofBase64 || 'https://i.ibb.co/C0bXZn0k/placeholder_receipt.jpg',
           status: 'Pending'
@@ -200,17 +203,19 @@ export default function StudentRegistration() {
           fullName: s.fullName,
           dob: s.dob,
           gender: s.gender,
-          country: data.country,
-          state: data.state,
+          country: s.country,
+          state: s.state,
+          lga: s.lga,
           schoolName: data.schoolName,
-          category: s.category,
+          registrationCategory: s.registrationCategory,
+          level: s.level,
+          studentClass: s.studentClass,
           passportUrl: payload.passport_url,
           paymentProofUrl: payload.payment_proof_url
         });
       }
 
       setSuccessData({ count: data.students.length, regNumbers: addedRegNumbers });
-      setStep(3);
     } catch (err: any) {
       alert("Registration failed: " + err.message);
     } finally {
@@ -218,7 +223,7 @@ export default function StudentRegistration() {
     }
   }
 
-  if (step === 3) {
+  if (successData.count > 0) {
     return (
       <div className="container mx-auto px-4 py-24 max-w-2xl text-center">
         <div className="bg-primary/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -255,19 +260,8 @@ export default function StudentRegistration() {
     <div className="container mx-auto px-4 w-full max-w-7xl py-12 md:py-24 grid grid-cols-1 md:grid-cols-3 gap-12">
       <div className="md:col-span-1 space-y-6">
         <div>
-          <h1 className="font-serif text-3xl font-bold mb-4">Batch Registration</h1>
-          <p className="text-muted-foreground">Quickly register multiple students from your school for the upcoming international competition cycle.</p>
-        </div>
-
-        <div className="space-y-4">
-          <div className={`p-4 border rounded-xl transition-colors ${step === 1 ? 'bg-primary/5 border-primary shadow-sm' : 'bg-muted/30 border-transparent opacity-60'}`}>
-            <h3 className="font-semibold text-sm tracking-wider uppercase mb-1">Step 1</h3>
-            <p>School & Contact Info</p>
-          </div>
-          <div className={`p-4 border rounded-xl transition-colors ${step === 2 ? 'bg-primary/5 border-primary shadow-sm' : 'bg-muted/30 border-transparent opacity-60'}`}>
-            <h3 className="font-semibold text-sm tracking-wider uppercase mb-1">Step 2</h3>
-            <p>Students & Payment</p>
-          </div>
+          <h1 className="font-serif text-3xl font-bold mb-4">Student Registration</h1>
+          <p className="text-muted-foreground">Register your students for the international competition. All fields required.</p>
         </div>
 
         <Card className="bg-primary/5 border-primary/20">
@@ -299,61 +293,25 @@ export default function StudentRegistration() {
         <Card className="border-border/50 shadow-lg relative h-full">
           <CardContent className="p-6 md:p-10">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              
-              <div className={step === 1 ? 'block animate-in slide-in-from-right-4 fade-in duration-300' : 'hidden'}>
-                <h2 className="text-xl font-serif font-bold mb-6 pb-2 border-b">School & Contact Details</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="schoolName">School Name</Label>
-                    <Input id="schoolName" {...register("schoolName")} placeholder="Name of institution" />
-                    {errors.schoolName && <p className="text-xs text-destructive">{errors.schoolName.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input id="country" {...register("country")} placeholder="e.g. Nigeria" />
-                    {errors.country && <p className="text-xs text-destructive">{errors.country.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State / Province</Label>
-                    <Input id="state" {...register("state")} placeholder="e.g. Lagos" />
-                    {errors.state && <p className="text-xs text-destructive">{errors.state.message}</p>}
-                  </div>
+              <div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b gap-4">
+                   <div>
+                     <h2 className="text-xl font-serif font-bold">School/Organization Name</h2>
+                     <p className="text-sm text-muted-foreground mt-1">Enter your school or organization name.</p>
+                   </div>
+                </div>
+                <div className="space-y-2 mb-8">
+                  <Label htmlFor="schoolName">School/Organization Name</Label>
+                  <Input id="schoolName" {...register("schoolName")} placeholder="Name of your institution" />
+                  {errors.schoolName && <p className="text-xs text-destructive">{errors.schoolName.message}</p>}
                 </div>
 
                 <hr className="my-8 border-border/50" />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactName">Contact / Coordinator Name</Label>
-                    <Input id="contactName" {...register("contactName")} placeholder="Full name" />
-                    {errors.contactName && <p className="text-xs text-destructive">{errors.contactName.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contactPhone">Phone Number</Label>
-                    <Input id="contactPhone" {...register("contactPhone")} placeholder="+234..." />
-                    {errors.contactPhone && <p className="text-xs text-destructive">{errors.contactPhone.message}</p>}
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" {...register("email")} placeholder="school@email.com" />
-                    {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                  </div>
-                </div>
-
-                <div className="pt-8 flex justify-end">
-                  <Button type="button" className="transition-all hover:scale-105 active:scale-95 shadow-md" onClick={async () => {
-                     // Check step 1 fields
-                     const valid = await trigger(["schoolName", "country", "state", "contactName", "contactPhone", "email"])
-                     if (valid) setStep(2);
-                  }}>Continue to Students</Button>
-                </div>
-              </div>
-
-              <div className={step === 2 ? 'block animate-in slide-in-from-right-4 fade-in duration-300' : 'hidden'}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b gap-4">
                    <div>
                      <h2 className="text-xl font-serif font-bold">Register Students</h2>
-                     <p className="text-sm text-muted-foreground mt-1">Enter details manually or upload an Excel file.</p>
+                     <p className="text-sm text-muted-foreground mt-1">Enter student details or upload an Excel file.</p>
                    </div>
                    <div className="flex items-center gap-3">
                      <Badge variant="secondary" className="text-sm px-3">{fields.length} Student{fields.length !== 1 && 's'}</Badge>
@@ -406,35 +364,98 @@ export default function StudentRegistration() {
                                 <SelectValue placeholder="Select gender" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="male">Male</SelectItem>
-                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="Male">Male</SelectItem>
+                                <SelectItem value="Female">Female</SelectItem>
                               </SelectContent>
                              </Select>
                              {errors?.students?.[index]?.gender && <p className="text-xs text-destructive">{errors.students[index]?.gender?.message}</p>}
                           </div>
 
                           <div className="space-y-2 md:col-span-2">
-                            <Label>Competition Category</Label>
-                            <Select onValueChange={(val) => setValue(`students.${index}.category` as any, val)}>
+                            <Label>Country</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.country` as any, val)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select country" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {countries.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                            {errors?.students?.[index]?.country && <p className="text-xs text-destructive">{errors.students[index]?.country?.message}</p>}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>State / Province</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.state` as any, val)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select state" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {watch(`students.${index}.country` as any) === 'Nigeria' && nigerianStates ? 
+                                  Object.keys(nigerianStates).map(state => (<SelectItem key={state} value={state}>{state}</SelectItem>)) 
+                                  : <SelectItem value="Other">Other</SelectItem>
+                                }
+                              </SelectContent>
+                            </Select>
+                            {errors?.students?.[index]?.state && <p className="text-xs text-destructive">{errors.students[index]?.state?.message}</p>}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>LGA / Local Government</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.lga` as any, val)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select LGA" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {watch(`students.${index}.country` as any) === 'Nigeria' && watch(`students.${index}.state` as any) && nigerianStates[watch(`students.${index}.state` as any)] ? 
+                                  nigerianStates[watch(`students.${index}.state` as any)].map(lga => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))
+                                  : <SelectItem value="N/A">N/A</SelectItem>
+                                }
+                              </SelectContent>
+                            </Select>
+                            {errors?.students?.[index]?.lga && <p className="text-xs text-destructive">{errors.students[index]?.lga?.message}</p>}
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Registration Category</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.registrationCategory` as any, val)}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select category" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Art Drawing">Art Drawing</SelectItem>
-                                <SelectItem value="Painting">Painting</SelectItem>
-                                <SelectItem value="Nature Drawing">Nature Drawing</SelectItem>
-                                <SelectItem value="Cultural Art">Cultural Art</SelectItem>
-                                <SelectItem value="Abstract Art">Abstract Art</SelectItem>
-                                <SelectItem value="Digital Art">Digital Art</SelectItem>
-                                <SelectItem value="French Spelling Bee">French Spelling Bee</SelectItem>
-                                <SelectItem value="French Essay Writing">French Essay Writing</SelectItem>
-                                <SelectItem value="Creative Writing">Creative Writing</SelectItem>
-                                <SelectItem value="Dictation">Dictation</SelectItem>
-                                <SelectItem value="Creative Problem Solving">Creative Problem Solving</SelectItem>
-                                <SelectItem value="All">All Categories</SelectItem>
+                                {registrationCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
                               </SelectContent>
                             </Select>
-                            {errors?.students?.[index]?.category && <p className="text-xs text-destructive">{errors.students[index]?.category?.message}</p>}
+                            {errors?.students?.[index]?.registrationCategory && <p className="text-xs text-destructive">{errors.students[index]?.registrationCategory?.message}</p>}
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Level / Category</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.level` as any, val)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {studentLevels.map(lvl => (<SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                            {errors?.students?.[index]?.level && <p className="text-xs text-destructive">{errors.students[index]?.level?.message}</p>}
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Class / Level</Label>
+                            <Select onValueChange={(val) => setValue(`students.${index}.studentClass` as any, val)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select class" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {watch(`students.${index}.level` as any) && classOptions[watch(`students.${index}.level` as any)] ? 
+                                  classOptions[watch(`students.${index}.level` as any)].map(cls => (<SelectItem key={cls} value={cls}>{cls}</SelectItem>))
+                                  : <SelectItem value="">No options available</SelectItem>
+                                }
+                              </SelectContent>
+                            </Select>
+                            {errors?.students?.[index]?.studentClass && <p className="text-xs text-destructive">{errors.students[index]?.studentClass?.message}</p>}
                           </div>
 
                           <div className="space-y-2 md:col-span-2 mt-2">
@@ -475,7 +496,7 @@ export default function StudentRegistration() {
                     type="button" 
                     variant="outline" 
                     className="w-full border-dashed transition-all hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow-md"
-                    onClick={() => append({ fullName: '', dob: '', gender: '', category: '', passportFileBase64: '', passportFileName: '' })}
+                    onClick={() => append({ fullName: '', dob: '', gender: '', country: '', state: '', lga: '', registrationCategory: '', level: '', studentClass: '', passportFileBase64: '', passportFileName: '' })}
                   >
                     <Plus className="w-4 h-4 mr-2" /> Add Another Student
                   </Button>
@@ -485,7 +506,10 @@ export default function StudentRegistration() {
 
                 <div className="mb-8 p-6 bg-muted/30 rounded-xl border border-dashed flex flex-col items-center text-center">
                   <UploadCloud className="w-10 h-10 mb-4 text-primary" />
-                  <h4 className="font-semibold mb-1">Upload Batch Proof of Payment</h4>
+                  <div className="flex items-center gap-2 justify-center mb-1">
+                    <h4 className="font-semibold">Upload Batch Proof of Payment</h4>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">REQUIRED</span>
+                  </div>
                   <p className="text-sm text-muted-foreground mb-4">Upload the combined receipt for all registered students (JPEG/PNG/PDF)</p>
                   
                   <Label className="flex items-center justify-center gap-2 border border-primary text-primary hover:bg-primary/5 h-10 px-4 rounded-md text-sm font-medium cursor-pointer shadow-sm transition-all hover:scale-105 active:scale-95">
@@ -509,12 +533,12 @@ export default function StudentRegistration() {
                     }} />
                   </Label>
                   <input type="hidden" {...register('paymentProofBase64')} />
-                  {watch('paymentProofFileName' as any) && <p className="text-xs text-green-600 mt-3 font-medium truncate max-w-sm">{watch('paymentProofFileName' as any)}</p>}
+                  {watch('paymentProofFileName' as any) && <p className="text-xs text-green-600 mt-3 font-medium truncate max-w-sm">✓ {watch('paymentProofFileName' as any)}</p>}
+                  {errors.paymentProofBase64 && <p className="text-xs text-destructive mt-3 font-medium">{errors.paymentProofBase64.message}</p>}
                 </div>
 
-                <div className="pt-6 flex justify-between border-t border-border/50">
-                  <Button type="button" variant="outline" className="transition-all hover:scale-105 active:scale-95 shadow-sm" onClick={() => setStep(1)}>Back</Button>
-                  <Button type="submit" disabled={isSubmitting || uploadingFilesCount > 0} className="transition-all hover:scale-105 active:scale-95 shadow-md">
+                <div className="pt-6 flex justify-end border-t border-border/50">
+                  <Button type="submit" disabled={isSubmitting || uploadingFilesCount > 0 || !watch('paymentProofBase64')} className="transition-all hover:scale-105 active:scale-95 shadow-md">
                     {uploadingFilesCount > 0 ? "Uploading files..." : isSubmitting ? "Submitting..." : `Register ${fields.length} Student${fields.length > 1 ? 's' : ''}`}
                   </Button>
                 </div>

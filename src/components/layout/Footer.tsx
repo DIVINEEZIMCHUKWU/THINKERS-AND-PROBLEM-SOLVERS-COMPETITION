@@ -1,8 +1,46 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function Footer() {
+  const sponsors = [
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" },
+    { name: "Toyota", src: "/Images/Toyota.PNG" }
+  ];
+
   return (
     <footer className="w-full border-t bg-background py-12 md:py-16">
+      {/* Inspired By Section */}
+      <div className="mb-12 border-b pb-12">
+        <div className="mx-auto px-0 sm:px-0">
+          <h3 className="font-serif text-lg md:text-3xl font-bold text-center mb-10">Inspired By:</h3>
+          <div className="w-full overflow-hidden bg-gradient-to-r from-transparent via-white to-transparent">
+            <motion.div
+              className="flex gap-8"
+              initial={{ x: 0 }}
+              animate={{ x: -1000 }}
+              transition={{ ease: "linear", duration: 30, repeat: Infinity }}
+            >
+              {sponsors.map((sponsor, idx) => (
+                <div key={idx} className="w-[280px] md:w-[340px] flex-shrink-0 flex items-center justify-center bg-white rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow">
+                  <img src={sponsor.src} alt={sponsor.name} className="w-full h-auto object-contain max-h-40" />
+                </div>
+              ))}
+              {sponsors.map((sponsor, idx) => (
+                <div key={`repeat-${idx}`} className="w-[280px] md:w-[340px] flex-shrink-0 flex items-center justify-center bg-white rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow">
+                  <img src={sponsor.src} alt={sponsor.name} className="w-full h-auto object-contain max-h-40" />
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 sm:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-4">
@@ -10,7 +48,6 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               An international art and educational platform discovering and rewarding talented young minds.
             </p>
-            <p className="text-xs text-muted-foreground pt-4">Est. 1990</p>
           </div>
           <div>
             <h4 className="font-semibold mb-4 text-sm tracking-widest uppercase">Quick Links</h4>

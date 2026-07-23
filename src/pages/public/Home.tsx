@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle } from 'lucide-react';
+import { X, Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle, Music } from 'lucide-react';
 import HeroSlider from '@/components/common/HeroSlider';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -109,7 +109,7 @@ export default function Home() {
             className="flex flex-col items-center max-w-4xl bg-background/95 p-8 md:p-12 rounded-[2rem] shadow-2xl shadow-black/10 border border-black/5 dark:border-white/10"
           >
             <div className="mb-6 inline-block py-1.5 px-4 bg-gradient-to-r from-[#D32F2F] via-[#F57F17] to-[#388E3C] text-white rounded-full text-xs font-bold uppercase tracking-widest shadow-md">
-              Est. 1990 — International Education
+              Thinkers and problem solvers, Founded 1990
             </div>
             <h1 className="font-extrabold text-4xl md:text-6xl lg:text-7xl leading-[1.1] md:leading-[0.95] tracking-tight mb-6 md:mb-8">
               <span className="bg-gradient-to-r from-[#D32F2F] via-[#F57F17] to-[#388E3C] bg-clip-text text-transparent pb-2 inline-block">Raising Creative Thinkers and Problem Solvers for the Future</span>
@@ -217,7 +217,7 @@ export default function Home() {
       {/* IMAGE SHOWCASE STRIP */}
       <div className="w-full bg-slate-900 py-10 md:py-12 overflow-hidden flex flex-col gap-6">
          <div className="container mx-auto px-4 text-center mb-2 md:mb-4">
-           <h3 className="text-white font-serif text-xl md:text-2xl italic">Inspiring the Next Generation</h3>
+           <h3 className="text-white font-serif text-xl md:text-2xl italic">Thinkers and problem solvers… inspiring the next generation</h3>
          </div>
          <div className="w-full overflow-hidden relative">
            <motion.div 
@@ -285,7 +285,7 @@ export default function Home() {
             <Link to="/categories" className={buttonVariants({ variant: "ghost", className: "group" })}>View All Categories <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" /></Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="hover:rotate-0 transition-transform duration-300 transform -rotate-3 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
               <CardHeader>
                 <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 text-red-600 dark:text-red-400">
@@ -333,6 +333,24 @@ export default function Home() {
                   <li>• STEM Innovation</li>
                   <li>• Critical Logic</li>
                   <li>• Out-of-the-box Thinking</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:rotate-0 transition-transform duration-300 transform rotate-1 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4 text-purple-600 dark:text-purple-400">
+                  <Music className="w-6 h-6" />
+                </div>
+                <CardTitle className="text-xl">Music and Dance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-6">Celebrate musical talent and rhythmic expression through various performing arts.</p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>• Singing</li>
+                  <li>• Playing of Musical Instrument</li>
+                  <li>• Dancing/Ballet Dance</li>
+                  <li>• Conducting</li>
                 </ul>
               </CardContent>
             </Card>
@@ -433,124 +451,106 @@ export default function Home() {
                 <li className="flex items-start gap-3"><CheckCircle className="w-6 h-6 text-accent shrink-0 mt-0.5" /><span className="text-muted opacity-90">Promotion of a culture of creativity in schools</span></li>
                 <li className="flex items-start gap-3"><CheckCircle className="w-6 h-6 text-accent shrink-0 mt-0.5" /><span className="text-muted opacity-90">Partnership and sponsorship opportunities</span></li>
               </ul>
-              <div className="bg-accent/10 p-5 rounded-2xl border border-accent/20">
+              <div className="bg-green-500/10 p-5 rounded-2xl border border-green-500/20">
                 <p className="text-base text-background opacity-90 leading-relaxed font-medium">
-                  Schools that consistently participate are recognized with the <strong className="text-accent">Best Participating School Award</strong>, <strong className="text-accent">Most Creative School Award</strong>, and the <strong className="text-accent">Excellence in Language Development Award</strong>.
+                  Schools that consistently participate are recognized with the <strong className="text-green-500">Best Participating School Award</strong>, <strong className="text-green-500">Most Creative School Award</strong>, and the <strong className="text-green-500">Excellence in Language Development Award</strong>.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="text-center mb-10 md:mb-16">
-            <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4 text-background">Awards & Recognition</h2>
-            <p className="text-muted max-w-2xl mx-auto text-sm md:text-lg opacity-80">Honoring excellence across all levels of participation.</p>
+            <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4 text-background">Price Structure</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="bg-background/10 border-none text-background shadow-xl hover:bg-background/20 transition-colors pt-6">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-4">
-                  <Trophy className="w-10 h-10 text-primary" />
-                </div>
-                <CardTitle className="text-2xl font-serif">Student Awards</CardTitle>
+          <div className="space-y-8">
+            {/* Overall Best Award */}
+            <Card className="bg-white border-green-500 border-2 shadow-xl p-8">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl md:text-3xl font-serif font-bold text-center mb-4 text-green-600">Overall Best in Each Category</CardTitle>
+                <p className="text-center text-lg font-semibold text-green-600">100 Points</p>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-4 text-center text-muted opacity-90 text-lg">
-                  <li>Gold, Silver & Bronze Medals</li>
-                  <li>Certificates of Achievement</li>
-                  <li>Scholarships & Gift Items</li>
-                  <li>Cash Prizes up to ₦300,000</li>
-                  <li>Laptops & Tablets</li>
-                </ul>
+                <div className="text-center space-y-3 text-gray-700">
+                  <p className="text-lg font-bold text-green-600">Cash Prize of ₦1,000,000.00</p>
+                  <p className="text-gray-800 font-semibold">Scholarship, Laptop, Award Plaque, Medals & Certificate</p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-background/10 border-none text-background shadow-xl hover:bg-background/20 transition-colors pt-6">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                  <Award className="w-10 h-10 text-accent" />
-                </div>
-                <CardTitle className="text-2xl font-serif">School Awards</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-4 text-center text-muted opacity-90 text-lg">
-                  <li>Best Participating School Award</li>
-                  <li>Most Creative School Award</li>
-                  <li>Excellence in Language Development</li>
-                </ul>
-              </CardContent>
-            </Card>
+            {/* Prize Tiers */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* 1st Place */}
+              <Card className="bg-white border-2 border-green-500 shadow-xl">
+                <CardHeader className="bg-green-500 text-white pb-6">
+                  <CardTitle className="text-2xl font-serif text-center">1st Place</CardTitle>
+                  <p className="text-center text-sm font-semibold">TBA</p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <p className="font-bold text-lg text-green-600">Cash Prize of ₦500,000.00</p>
+                    <p className="text-gray-700 text-sm font-semibold">Laptop, Award Plaque, Medals & Certificate</p>
+                  </div>
+                  <div className="border-t border-green-200 pt-4 space-y-2 text-sm text-gray-700">
+                    <p className="font-semibold">• Painting Competition</p>
+                    <p className="font-semibold">• French Spelling Bee</p>
+                    <p className="font-semibold">• Essay Writing</p>
+                    <p className="font-semibold">• Music and Dance</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-background/10 border-none text-background shadow-xl hover:bg-background/20 transition-colors pt-6">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto w-20 h-20 bg-destructive/20 rounded-full flex items-center justify-center mb-4">
-                  <Users className="w-10 h-10 text-destructive" />
-                </div>
-                <CardTitle className="text-2xl font-serif">Supervisor Awards</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-4 text-center text-muted opacity-90 text-lg">
-                  <li>Recognition Certificates</li>
-                  <li>Volunteer Appreciation Awards</li>
-                </ul>
-              </CardContent>
-            </Card>
+              {/* 2nd Place */}
+              <Card className="bg-white border-2 border-green-500 shadow-xl">
+                <CardHeader className="bg-green-500 text-white pb-6">
+                  <CardTitle className="text-2xl font-serif text-center">2nd Place</CardTitle>
+                  <p className="text-center text-sm font-semibold">TBA</p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <p className="font-bold text-lg text-green-600">₦300,000 Cash Prize</p>
+                    <p className="text-gray-700 text-sm font-semibold">Tablet, Award Plaque, Medals & Certificate</p>
+                  </div>
+                  <div className="border-t border-green-200 pt-4 space-y-2 text-sm text-gray-700">
+                    <p className="font-semibold">• Painting Competition</p>
+                    <p className="font-semibold">• French Spelling Bee</p>
+                    <p className="font-semibold">• Essay Writing</p>
+                    <p className="font-semibold">• Music and Dance</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 3rd Place */}
+              <Card className="bg-white border-2 border-green-500 shadow-xl">
+                <CardHeader className="bg-green-500 text-white pb-6">
+                  <CardTitle className="text-2xl font-serif text-center">3rd Place</CardTitle>
+                  <p className="text-center text-sm font-semibold">TBA</p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <p className="font-bold text-lg text-green-600">₦200,000 Cash Prize</p>
+                    <p className="text-gray-700 text-sm font-semibold">Android Phone, Award Plaque, Medals & Certificate</p>
+                  </div>
+                  <div className="border-t border-green-200 pt-4 space-y-2 text-sm text-gray-700">
+                    <p className="font-semibold">• Painting Competition</p>
+                    <p className="font-semibold">• French Spelling Bee</p>
+                    <p className="font-semibold">• Essay Writing</p>
+                    <p className="font-semibold">• Music and Dance</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
       
-      {/* EXHIBITION & PRIZES SECTION */}
+      {/* EXHIBITION SECTION */}
       <section className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4 sm:px-8">
           <div className="mb-12 md:mb-20">
             <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4 md:mb-6 text-center">Student Art Exhibition</h2>
             <p className="text-muted-foreground text-sm md:text-lg leading-relaxed text-center max-w-4xl mx-auto">
               Every competition cycle culminates in a prestigious Student Art Exhibition — both online and in-person — where the finest creative works are displayed for judges, families, and the international community to celebrate. Featured categories include Best Drawing, Best Painting, Best Creative Design, Best Cultural Artwork, Best French Writer, and Best French Speller.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold mb-6 md:mb-10 text-center">Prize Structure</h2>
-            <div className="overflow-x-auto rounded-3xl border border-border/50 shadow-xl bg-background/50 backdrop-blur mb-8 w-full max-w-full">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-muted/50 text-muted-foreground text-xs md:text-sm uppercase tracking-wider">
-                    <th className="px-3 md:px-6 py-4 font-semibold border-b border-border/50">Category</th>
-                    <th className="px-3 md:px-6 py-4 font-semibold border-b border-border/50">Position</th>
-                    <th className="px-3 md:px-6 py-4 font-semibold border-b border-border/50">School</th>
-                    <th className="px-3 md:px-6 py-4 font-semibold border-b border-border/50">Prizes Awarded</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-card text-foreground text-xs md:text-base">
-                  <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                    <td className="px-3 md:px-6 py-4 md:py-5 font-medium">Drawing Competition</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-primary font-semibold">1st Place</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-muted-foreground">TBA</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5">Scholarship, laptop, award plaque, medals & certificate</td>
-                  </tr>
-                  <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                    <td className="px-3 md:px-6 py-4 md:py-5 font-medium">Painting Competition</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-primary font-semibold">2nd Place</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-muted-foreground">TBA</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5">₦300k cash prize, tablet, award plaque, medals & certificate</td>
-                  </tr>
-                  <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                    <td className="px-3 md:px-6 py-4 md:py-5 font-medium">French Spelling Bee</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-primary font-semibold">1st Place</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-muted-foreground">TBA</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5">₦300k cash prize, tablet, award plaque, medals & certificate</td>
-                  </tr>
-                  <tr className="hover:bg-muted/20 transition-colors">
-                    <td className="px-3 md:px-6 py-4 md:py-5 font-medium">Essay Writing</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-primary font-semibold">2nd Place</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5 text-muted-foreground">TBA</td>
-                    <td className="px-3 md:px-6 py-4 md:py-5">₦300k cash prize, tablet, award plaque, medals & certificate</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="text-muted-foreground text-center max-w-3xl mx-auto italic">
-              Exhibition artworks are displayed both online and physically. Winners' photos, certificates, and judges' appreciation notes are published on the official competition platform.
             </p>
           </div>
         </div>
@@ -661,13 +661,23 @@ export default function Home() {
 
           <div>
             <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-accent">Online Business & Regulatory Registrations</h3>
-            <p className="text-center text-muted-foreground mb-10 max-w-3xl mx-auto">
+            <p className="text-center text-muted-foreground mb-8 max-w-3xl mx-auto">
               We also provide fast, reliable assistance with a range of official online registrations for individuals and businesses in Nigeria and beyond. Whether you're starting a new business, securing regulatory approvals, or fulfilling compliance requirements, our team handles the process efficiently on your behalf.
             </p>
+            
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-3xl border-2 border-blue-200 mb-12 shadow-md">
+              <p className="text-center text-gray-800 font-medium leading-relaxed">
+                Travel visas allow the bearer to enter a foreign country for touristic and leisure purposes only and stay for a predetermined amount of time. These visas do not entitle the holder to work or engage in any business activities in the host country.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-xl font-serif">CAC — Corporate Affairs Commission</CardTitle>
+                  <div className="flex items-center gap-4 mb-3">
+                    <img src="/Images/CAC.jpeg" alt="CAC" className="w-12 h-12 object-contain" />
+                    <CardTitle className="text-xl font-serif">CAC — Corporate Affairs Commission</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
@@ -678,7 +688,10 @@ export default function Home() {
 
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-xl font-serif">NAFDAC Registration</CardTitle>
+                  <div className="flex items-center gap-4 mb-3">
+                    <img src="/Images/NAFDAC.PNG" alt="NAFDAC" className="w-12 h-12 object-contain" />
+                    <CardTitle className="text-xl font-serif">NAFDAC Registration</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
@@ -689,7 +702,10 @@ export default function Home() {
 
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-xl font-serif">TIN — Tax Identification Number</CardTitle>
+                  <div className="flex items-center gap-4 mb-3">
+                    <img src="/Images/TIN.PNG" alt="TIN" className="w-12 h-12 object-contain" />
+                    <CardTitle className="text-xl font-serif">TIN — Tax Identification Number</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
@@ -700,7 +716,10 @@ export default function Home() {
 
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-xl font-serif">SCUML Registration</CardTitle>
+                  <div className="flex items-center gap-4 mb-3">
+                    <img src="/Images/Coat.jpeg" alt="SCUML" className="w-12 h-12 object-contain" />
+                    <CardTitle className="text-xl font-serif">SCUML Registration</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
