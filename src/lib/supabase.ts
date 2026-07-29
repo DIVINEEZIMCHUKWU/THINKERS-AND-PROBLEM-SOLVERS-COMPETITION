@@ -21,14 +21,19 @@ export const supabase = createClient(supabaseUrl || 'https://placeholder.supabas
 export const saveToSupabaseTable = async (tableName: string, data: any) => {
   if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing' };
   try {
-    const { error } = await supabase.from(tableName).insert(data);
+    const hasId = typeof data === 'object' && data !== null && 'id' in data;
+    const build = supabase.from(tableName) as any;
+    const query = hasId
+      ? build.upsert(data, { onConflict: 'id', ignoreDuplicates: false })
+      : build.insert(data);
+    const { error } = await query;
     if (error) {
        console.warn(`Could not save to Supabase ${tableName} table:`, error.message);
        return { success: false, error: error.message };
     }
     return { success: true };
   } catch (err: any) {
-    console.warn(`Supabase insert to ${tableName} failed:`, err.message);
+    console.warn(`Supabase upsert to ${tableName} failed:`, err.message);
     return { success: false, error: err.message };
   }
 };
@@ -120,4 +125,223 @@ export const deleteFileFromSupabase = async (bucket: string, url: string) => {
   } catch (err: any) {
     console.warn('Delete file from storage failed:', err.message);
   }
+};
+
+// ================================================================
+//  Fetch + DB→Zustand Adapters (used by public pages to hydrate
+//  their local store from the live Supabase tables on load).
+// ================================================================
+
+const _s = (val: unknown): string => (val === null || val === undefined ? '' : String(val));
+const _arr = <T>(val: unknown): T[] => Array.isArray(val) ? (val as T[]) : [];
+const _toISODate = (val: unknown): string => {
+  if (!val) return new Date().toISOString();
+  try {
+    const d = new Date(val as any);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  } catch {}
+  return new Date().toISOString();
+};
+
+export type WinnerArtworkRow = {
+  id: string; type: string; title: string; project_name?: string;
+  age?: string | number; person_name?: string; country?: string;
+  image_url: string; created_at?: string;
+};
+export type AdapterWinner = {
+  id: string; type: 'GRAND_PRIZES' | 'SPECIAL_AWARDS' | 'BEST_FINALISTS';
+  title: string; projectName: string; age: number | string;
+  personName: string; country: string; imageUrl: string;
+};
+
+export const adaptWinnerRow = (row: WinnerArtworkRow): AdapterWinner => ({
+  id: _s(row.id || Math.random().toString(36).slice(2, 11)),
+  type: (['GRAND_PRIZES','SPECIAL_AWARDS','BEST_FINALISTS'].includes(row.type as any)
+    ? row.type
+    : 'GRAND_PRIZES') as AdapterWinner['type'],
+  title: _s(row.title),
+  projectName: _s(row.project_name),
+  age: row.age !== null && row.age !== undefined ? (Number.isNaN(Number(row.age)) ? _s(row.age) : Number(row.age)) : '',
+  personName: _s(row.person_name),
+  country: _s(row.country),
+  imageUrl: _s(row.image_url),
+});
+
+export const fetchWinnersArtwork = async (): Promise<AdapterWinner[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) return [];
+  try {
+    const { data, error } = await supabase
+      .from('winner_artwork')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('fetchWinnersArtwork error:', error.message); return []; }
+    return (Array.isArray(data) ? data : []).map(adaptWinnerRow);
+  } catch (e: any) { console.warn('fetchWinnersArtwork error:', e.message); return []; }
+};
+
+export type ActivityRow = {
+  id: string; title: string; country?: string;
+  contest_number?: string; image_url: string; created_at?: string;
+};
+export type AdapterActivity = {
+  id: string; title: string; country: string;
+  contestNumber: string; imageUrl: string;
+};
+
+export const adaptActivityRow = (row: ActivityRow): AdapterActivity => ({
+  id: _s(row.id || Math.random().toString(36).slice(2, 11)),
+  title: _s(row.title),
+  country: _s(row.country),
+  contestNumber: _s(row.contest_number),
+  imageUrl: _s(row.image_url),
+});
+
+export const fetchActivities = async (): Promise<AdapterActivity[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) return [];
+  try {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('fetchActivities error:', error.message); return []; }
+    return (Array.isArray(data) ? data : []).map(adaptActivityRow);
+  } catch (e: any) { console.warn('fetchActivities error:', e.message); return []; }
+};
+
+export type VideoRow = {
+  id: string; title: string; video_url: string; platform?: string;
+};
+export type AdapterVideo = {
+  id: string; title: string; videoUrl: string; type: 'youtube' | 'drive';
+};
+
+export const adaptVideoRow = (row: VideoRow): AdapterVideo => {
+  const platform = String(row.platform || '').toLowerCase();
+  const isDrive = platform === 'drive' || /drive\.google\.com/i.test(row.video_url);
+  return {
+    id: _s(row.id || Math.random().toString(36).slice(2, 11)),
+    title: _s(row.title),
+    videoUrl: _s(row.video_url),
+    type: isDrive ? 'drive' : 'youtube',
+  };
+};
+
+export const fetchVideos = async (): Promise<AdapterVideo[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) return [];
+  try {
+    const { data, error } = await supabase
+      .from('video_gallery')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('fetchVideos error:', error.message); return []; }
+    return (Array.isArray(data) ? data : []).map(adaptVideoRow);
+  } catch (e: any) { console.warn('fetchVideos error:', e.message); return []; }
+};
+
+export type GalleryRow = {
+  id: string; title: string; project_name?: string;
+  age?: string | number; person_name?: string; country?: string;
+  image_url: string; created_at?: string;
+};
+export type AdapterGallery = {
+  id: string; title: string; projectName: string;
+  age: number | string; personName: string;
+  country: string; imageUrl: string;
+};
+
+export const adaptGalleryRow = (row: GalleryRow): AdapterGallery => ({
+  id: _s(row.id || Math.random().toString(36).slice(2, 11)),
+  title: _s(row.title),
+  projectName: _s(row.project_name),
+  age: row.age !== null && row.age !== undefined ? (Number.isNaN(Number(row.age)) ? _s(row.age) : Number(row.age)) : '',
+  personName: _s(row.person_name),
+  country: _s(row.country),
+  imageUrl: _s(row.image_url),
+});
+
+export const fetchArtworkGallery = async (): Promise<AdapterGallery[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) return [];
+  try {
+    const { data, error } = await supabase
+      .from('artwork_gallery')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('fetchArtworkGallery error:', error.message); return []; }
+    return (Array.isArray(data) ? data : []).map(adaptGalleryRow);
+  } catch (e: any) { console.warn('fetchArtworkGallery error:', e.message); return []; }
+};
+
+export type SkillProgrammeRow = {
+  id: string; is_active?: boolean;
+  hero_title?: string; hero_subtitle?: string; hero_description?: string;
+  skills?: unknown; full_content?: string;
+  sponsor_name?: string; sponsor_logo_url?: string; sponsor_website?: string;
+  organizer_name?: string; apply_link?: string; tutor_link?: string;
+  programme_images?: unknown; display_order?: number;
+  created_at?: string; updated_at?: string;
+};
+export type AdapterProgrammeImage = { image_url: string; title?: string };
+export type AdapterSkillProgramme = {
+  id: string; is_active: boolean;
+  hero_title: string; hero_subtitle: string; hero_description: string;
+  skills: string[]; full_content: string;
+  sponsor_name: string; sponsor_logo_url: string; sponsor_website: string;
+  organizer_name: string; apply_link: string; tutor_link: string;
+  programme_images: AdapterProgrammeImage[];
+  display_order: number; created_at: string;
+};
+
+export const adaptSkillProgrammeRow = (row: SkillProgrammeRow): AdapterSkillProgramme => {
+  let skills: string[] = [];
+  if (Array.isArray(row.skills)) {
+    skills = (row.skills as any[]).map(x => _s(x)).filter(Boolean);
+  } else if (typeof row.skills === 'string') {
+    try { skills = (JSON.parse(row.skills) as any[]).map(x => _s(x)).filter(Boolean); } catch {}
+  }
+  let programme_images: AdapterProgrammeImage[] = [];
+  if (Array.isArray(row.programme_images)) {
+    programme_images = (row.programme_images as any[]).map(p => ({
+      image_url: _s(p?.image_url || p?.url || p),
+      title: p?.title ? _s(p.title) : undefined,
+    })).filter(p => p.image_url);
+  } else if (typeof row.programme_images === 'string' && row.programme_images) {
+    try {
+      const parsed = JSON.parse(row.programme_images);
+      if (Array.isArray(parsed)) programme_images = parsed.map((p: any) => ({
+        image_url: _s(p?.image_url || p?.url || p),
+        title: p?.title ? _s(p.title) : undefined,
+      })).filter((p: any) => p.image_url);
+    } catch {}
+  }
+  return {
+    id: _s(row.id || Math.random().toString(36).slice(2, 11)),
+    is_active: Boolean(row.is_active),
+    hero_title: _s(row.hero_title),
+    hero_subtitle: _s(row.hero_subtitle),
+    hero_description: _s(row.hero_description),
+    skills,
+    full_content: _s(row.full_content),
+    sponsor_name: _s(row.sponsor_name),
+    sponsor_logo_url: _s(row.sponsor_logo_url),
+    sponsor_website: _s(row.sponsor_website),
+    organizer_name: _s(row.organizer_name),
+    apply_link: _s(row.apply_link),
+    tutor_link: _s(row.tutor_link),
+    programme_images,
+    display_order: Number(row.display_order || 0),
+    created_at: _toISODate(row.created_at),
+  };
+};
+
+export const fetchSkillProgrammes = async (): Promise<AdapterSkillProgramme[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) return [];
+  try {
+    const { data, error } = await supabase
+      .from('skill_programmes')
+      .select('*')
+      .order('display_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) { console.warn('fetchSkillProgrammes error:', error.message); return []; }
+    return (Array.isArray(data) ? data : []).map(adaptSkillProgrammeRow);
+  } catch (e: any) { console.warn('fetchSkillProgrammes error:', e.message); return []; }
 };

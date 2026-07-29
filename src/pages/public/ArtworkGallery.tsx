@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import HeroSlider from '@/components/common/HeroSlider';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useAppStore } from '@/store';
+import { fetchArtworkGallery } from '@/lib/supabase';
 
 const defaultArtworks = [
   'https://i.ibb.co/ZzcMHcf7/1.jpg',
@@ -15,7 +16,34 @@ const defaultArtworks = [
 ];
 
 export default function ArtworkGallery() {
-  const { artworkGallery } = useAppStore();
+  const { _hasHydrated, artworkGallery } = useAppStore();
+
+  useEffect(() => {
+    let cancelled = false;
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const hydrate = async () => {
+      try {
+        const rows = await fetchArtworkGallery();
+        if (cancelled) return;
+        if (Array.isArray(rows) && rows.length > 0) {
+          useAppStore.setState((prev: any) => ({
+            artworkGallery: rows,
+            _lastSyncedAt: Date.now(),
+          }));
+        }
+      } catch (err) { console.error('ArtworkGallery hydrate error:', err); }
+    };
+    const guard = { ran: false };
+    const once = () => {
+      if (guard.ran || cancelled) return;
+      guard.ran = true;
+      hydrate();
+    };
+    if (_hasHydrated) once();
+    timers.push(setTimeout(once, 250));
+    timers.push(setTimeout(once, 1200));
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+  }, [_hasHydrated]);
 
   const combinedArtworks = [
     ...artworkGallery.map(a => ({ url: a.imageUrl, title: `${a.title} | ${a.projectName || ''} | Age: ${a.age || ''} | ${a.personName || ''} | ${a.country || ''}` })),

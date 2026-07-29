@@ -14,10 +14,10 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'HOME', href: '/' },
+    { label: 'SKILL ACQUISITION', href: '/skill-acquisition' },
     { label: 'ABOUT CONTEST', href: '/about' },
     { label: "WINNERS' ARTWORK", href: '/winners-artwork' },
     { label: 'ACTIVITIES IN EACH COUNTRY', href: '/activities' },
-    { label: 'PANEL OF JUDGES IN THE WORLD CONTEST', href: '/judges' },
     { label: 'VIDEO GALLERY', href: '/video-gallery' },
     { label: 'ARTWORK GALLERY', href: '/artwork-gallery' },
   ];

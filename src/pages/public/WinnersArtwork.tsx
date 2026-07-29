@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import HeroSlider from '@/components/common/HeroSlider';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useAppStore } from '@/store';
+import { fetchWinnersArtwork } from '@/lib/supabase';
 
 const defaultArtworks = [
   'https://i.ibb.co/ZzcMHcf7/1.jpg',
@@ -57,7 +58,34 @@ const ArtworkGrid = ({ items, title, defaultImages = [] }: { items: {url: string
 );
 
 export default function WinnersArtwork() {
-  const { winnersArtwork } = useAppStore();
+  const { _hasHydrated, winnersArtwork } = useAppStore();
+
+  useEffect(() => {
+    let cancelled = false;
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const hydrate = async () => {
+      try {
+        const rows = await fetchWinnersArtwork();
+        if (cancelled) return;
+        if (Array.isArray(rows) && rows.length > 0) {
+          useAppStore.setState((prev: any) => ({
+            winnersArtwork: rows,
+            _lastSyncedAt: Date.now(),
+          }));
+        }
+      } catch (err) { console.error('WinnersArtwork hydrate error:', err); }
+    };
+    const guard = { ran: false };
+    const once = () => {
+      if (guard.ran || cancelled) return;
+      guard.ran = true;
+      hydrate();
+    };
+    if (_hasHydrated) once();
+    timers.push(setTimeout(once, 250));
+    timers.push(setTimeout(once, 1200));
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+  }, [_hasHydrated]);
 
   const grandPrizes = winnersArtwork.filter(w => w.type === 'GRAND_PRIZES').map(w => ({ url: w.imageUrl, title: `${w.title} | ${w.projectName || ''} | Age: ${w.age || ''} | ${w.personName || ''} | ${w.country || ''}` }));
   const specialAwards = winnersArtwork.filter(w => w.type === 'SPECIAL_AWARDS').map(w => ({ url: w.imageUrl, title: `${w.title} | ${w.projectName || ''} | Age: ${w.age || ''} | ${w.personName || ''} | ${w.country || ''}` }));

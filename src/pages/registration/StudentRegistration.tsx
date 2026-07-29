@@ -146,7 +146,11 @@ export default function StudentRegistration() {
                 fullName: String(fullName),
                 dob: typeof parsedDob === 'string' && parsedDob.length >= 8 ? parsedDob : '2010-01-01',
                 gender: parsedGender,
-                category: String(category) || 'Art Drawing',
+                country: 'Nigeria',
+                state: '',
+                level: 'Primary',
+                studentClass: '',
+                registrationCategory: String(category) || 'Art Drawing',
                 passportFileBase64: '',
                 passportFileName: ''
              });

@@ -15,6 +15,7 @@ import Judges from '@/pages/public/Judges';
 import VideoGallery from '@/pages/public/VideoGallery';
 import Exhibition from '@/pages/public/Exhibition';
 import ArtworkGallery from '@/pages/public/ArtworkGallery';
+import SkillAcquisition from '@/pages/public/SkillAcquisition';
 
 // Admin Pages
 import Dashboard from '@/pages/admin/Dashboard';
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/judges" element={<Judges />} />
             <Route path="/video-gallery" element={<VideoGallery />} />
             <Route path="/register/student" element={<StudentRegistration />} />
+            <Route path="/skill-acquisition" element={<SkillAcquisition />} />
           </Route>
 
           {/* Admin Routes */}

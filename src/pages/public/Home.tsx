@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle, Music } from 'lucide-react';
+import { X, Globe, Palette, Languages, Lightbulb, Trophy, Star, ArrowRight, MessageCircle, Award, GraduationCap, School, Users, CheckCircle, Music, PhoneCall, ExternalLink } from 'lucide-react';
 import HeroSlider from '@/components/common/HeroSlider';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAppStore } from '@/store';
+import { normalizeUrl } from '@/lib/utils';
 
 const homeHeroImages = [
   "https://i.ibb.co/TqqGThfL/Chalkboard-Art-for-Little-Creators.jpg",
@@ -69,10 +71,37 @@ const inspiringImages = [
   "https://i.ibb.co/4ZCY4stR/IMG-20260513-WA0065.jpg"
 ];
 
+const DEFAULT_ART_MATERIALS = [
+  { title: 'ARTIST BOX, 150 ART SET', description: 'ARTIST BOX, 150 ART SET - N54,000', image_url: 'https://i.ibb.co/KpsrYSBk/IMG-20260728-WA0042.jpg', display_order: 1 },
+  { title: 'Crayola 24 Mini Kids Maxi Wax Crayons', description: 'Crayola 24 Mini Kids Maxi Wax Crayons - Assorted Colors Brand: Crayola | Similar Products from Crayola N33,250', image_url: 'https://i.ibb.co/vCmsn7Y8/IMG-20260728-WA0043.jpg', display_order: 2 },
+  { title: 'Monami 12 Color Poster Paint Set', description: 'Monami 12 Color Poster Paint Set - Premium Water-Based Art Colors with Portable Storage Case. Brand: Monami | Similar Products from Monami - N13,350', image_url: 'https://i.ibb.co/4nsb5R31/IMG-20260728-WA0044.jpg', display_order: 3 },
+  { title: '12Pcs Artist Paint Brush Pen', description: '12Pcs Artist Paint Brush Pen for Acrylic, Oil Painting, Drawing - N17,500', image_url: 'https://i.ibb.co/4Ljt1Xt/IMG-20260728-WA0045-1.jpg', display_order: 4 },
+  { title: '32Pcs Oil Painting Brush Set', description: '32Pcs Oil Painting Brush Set, Nylon Hair Brush Set - N24,400', image_url: 'https://i.ibb.co/4Ljt1Xt/IMG-20260728-WA0045-1.jpg', display_order: 5 },
+  { title: 'Paint Runner Roller Pro Kit', description: 'Paint Runner Roller Pro Rollers Wall Painting Kit, Walls Brush Handle Tool, Home Garden+Extension Pole Tube DIY - N55,450', image_url: 'https://i.ibb.co/ZyyccL4/IMG-20260728-WA0046.jpg', display_order: 6 },
+  { title: '17 Holes Non-Stick Paint Palette', description: '17 Holes Non-Stick Paint Palette/Artist Paint Mixing Tray - N16,500', image_url: 'https://i.ibb.co/2bnNBcQ/IMG-20260728-WA0047.jpg', display_order: 7 },
+  { title: '5 Painting Knives Stainless Spatula', description: '5 Painting Knives Stainless Spatula Palette Knife - N19,999', image_url: 'https://i.ibb.co/Tqbw1P5w/IMG-20260728-WA0048.jpg', display_order: 8 },
+  { title: '35Pcs Professional Sketching Drawing Kit', description: '35Pcs Professional Sketching Drawing Artist Kit, Sketch Pencils, Charcoal Art Tools Set - N18,994', image_url: 'https://i.ibb.co/sdt2cZBX/IMG-20260728-WA0049.jpg', display_order: 9 },
+  { title: 'Digabi 24 Colors Dual-Ended Colored Pencils', description: 'Digabi 12pcs/24 Colors Dual-Ended Water-Soluble Colored Pencils - 24 Vibrant Colors, Triangular Log Sketch Art Supplies, Suitable for Schools, Offices, And Artists, Office Art Supplies, Vivid Art Supplies, Durable Art Materials, Colored Pencil Set\nBrand: Digabi | Similar products from Digabi\n₦ 21,026', image_url: 'https://i.ibb.co/6J7fYgVQ/IMG-20260728-WA0050.jpg', display_order: 10 },
+  { title: '72pcs Professional Drawing Artist Kit', description: '72pcs Professional Drawing Artist Kit Set Art & Bag\n₦ 32,984', image_url: 'https://i.ibb.co/tPN8VkQR/IMG-20260728-WA0051.jpg', display_order: 11 },
+  { title: 'Early Education Kiddies Complete Artistic Set', description: 'Early Education Kiddies Complete Artistic set Drawing And Painting Art Kit With Colourful Pencils - 208 Pieces - Pink\n₦ 39,000', image_url: 'https://i.ibb.co/5hfkQh77/IMG-20260728-WA0052.jpg', display_order: 12 },
+  { title: 'OVO TOUMI 80 Colors Art Markers', description: 'OVO TOUMI 80 Colors Art Markers Set Double Tip Broad Fine Point Marker Pen\nBrand: OVO TOUMI | Similar products from OVO TOUMI\n₦ 30,800', image_url: 'https://i.ibb.co/NdhV9yh4/IMG-20260728-WA0053.jpg', display_order: 13 },
+  { title: '24-Color Oil-Based Colored Pencils', description: '24-Color Oil-Based Colored Pencils Set: Student/Kids Art Drawing Pencils (Thick Tip)\n₦ 8,880', image_url: 'https://i.ibb.co/wZ847gjc/IMG-20260728-WA0054.jpg', display_order: 14 },
+  { title: 'OVO TOUMI 150pcs Art Drawing Set', description: 'OVO TOUMI 150pcs Art Drawing Set Painting Sketching Color Pen\nBrand: OVO TOUMI | Similar products from OVO TOUMI\n₦ 18,480 - N18,480', image_url: 'https://i.ibb.co/xrdzjcT/IMG-20260728-WA0055.jpg', display_order: 15 },
+  { title: '14Pcs Professional Sketch Pencil Set', description: '14Pcs/Set Professional Sketch Pencil Set HB 2B Graphite Art Drawing Pencil School Stationery\n₦ 26,705', image_url: 'https://i.ibb.co/QvPXysVm/IMG-20260728-WA0056.jpg', display_order: 16 },
+  { title: 'Poster Colours 60ml x12', description: 'Poster Colours 60ml x12 N18,450.00', image_url: 'https://i.ibb.co/yFJ0PxDt/IMG-20260728-WA0057.jpg', display_order: 17 },
+  { title: 'Pure White Cotton Hankerchief 12 Pieces', description: 'Pure White Cotton Hankerchief I 12 Pieces\n₦ 6,700', image_url: 'https://i.ibb.co/ZRF5wFYZ/IMG-20260728-WA0058.jpg', display_order: 18 },
+];
+
 export default function Home() {
-  const [selectedEvent, setSelectedEvent] = useState<{ title: string; description: string; flyer_url: string } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{ title: string; description: string; flyer_url: string; button_text?: string; button_url?: string; flyer?: string } | null>(null);
+  const [selectedArt, setSelectedArt] = useState<{ title: string; description: string; image_url: string; display_order?: number } | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [supabaseArtMaterials, setSupabaseArtMaterials] = useState<any[]>([]);
+  const [isLoadingArtMaterials, setIsLoadingArtMaterials] = useState(false);
+  const artMaterials = useAppStore((s: any) => s.artMaterials);
+  const addArtMaterial = useAppStore((s: any) => s.addArtMaterial);
+  const _hasHydrated = useAppStore((s: any) => s._hasHydrated);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -94,6 +123,60 @@ export default function Home() {
 
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadArtMaterials = async () => {
+      setIsLoadingArtMaterials(true);
+      try {
+        const { data, error } = await supabase
+          .from('art_materials')
+          .select('*')
+          .order('display_order', { ascending: true, nullsFirst: false });
+        if (error) throw error;
+        if (!cancelled) {
+          setSupabaseArtMaterials(Array.isArray(data) ? data : []);
+          try { (useAppStore.getState() as any)._markSyncedNow(); } catch {}
+        }
+      } catch (err) {
+        console.error('Failed to load art_materials from Supabase:', err);
+        if (!cancelled) setSupabaseArtMaterials([]);
+      } finally {
+        if (!cancelled) setIsLoadingArtMaterials(false);
+      }
+    };
+    loadArtMaterials();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    const zustandItems = Array.isArray(artMaterials) ? artMaterials : [];
+    const dbItems = Array.isArray(supabaseArtMaterials) ? supabaseArtMaterials : [];
+    const merged = [...dbItems, ...zustandItems];
+    const existingTitles = new Set(
+      merged.map((m: any) => m.title?.trim().toLowerCase()).filter(Boolean)
+    );
+    const missingDefaults = DEFAULT_ART_MATERIALS.filter(
+      (d) => !existingTitles.has(d.title.trim().toLowerCase())
+    );
+    if (missingDefaults.length > 0) {
+      missingDefaults.forEach((m) => addArtMaterial(m));
+    }
+  }, [_hasHydrated, supabaseArtMaterials, artMaterials, addArtMaterial]);
+
+  // Merge priority: DB (source of truth) + Zustand + Defaults, dedupe by title, prefer DB when duplicated
+  const effectiveArtMaterials = (() => {
+    const zustandItems = (Array.isArray(artMaterials) ? artMaterials : []) as any[];
+    const dbItems = (Array.isArray(supabaseArtMaterials) ? supabaseArtMaterials : []) as any[];
+    const byTitle = new Map<string, any>();
+    DEFAULT_ART_MATERIALS.forEach((m) => byTitle.set(m.title.trim().toLowerCase(), m));
+    zustandItems.forEach((m) => { if (m?.title) byTitle.set(m.title.trim().toLowerCase(), m); });
+    dbItems.forEach((m) => { if (m?.title) byTitle.set(m.title.trim().toLowerCase(), m); });
+    const arr = Array.from(byTitle.values());
+    arr.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    return arr;
+  })() as any[];
 
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
@@ -203,8 +286,37 @@ export default function Home() {
                 <div className="p-8 bg-background">
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">{selectedEvent.title}</h2>
                   <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{selectedEvent.description}</p>
-                  <div className="flex gap-4 pt-6 border-t">
-                    <Link to="/register/student" className={buttonVariants({ size: "lg", className: "rounded-lg" })}>Register Now</Link>
+                  <div className="flex flex-wrap gap-4 pt-6 border-t">
+                    {(selectedEvent.button_text || selectedEvent.button_url) ? (
+                      (() => {
+                        const customText = (selectedEvent.button_text || '').trim();
+                        const customUrl = (selectedEvent.button_url || '').trim();
+                        const label = customText || 'Register Now';
+                        const href = customUrl ? normalizeUrl(customUrl) : '/register/student';
+                        const isExternal = /^https?:\/\//i.test(href);
+                        const icon = isExternal ? <ExternalLink className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />;
+                        if (isExternal) {
+                          return (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={buttonVariants({ size: "lg", className: "rounded-lg" })}>
+                              {label}
+                              {icon}
+                            </a>
+                          );
+                        }
+                        return (
+                          <Link to={href} className={buttonVariants({ size: "lg", className: "rounded-lg" })}>
+                            {label}
+                            {icon}
+                          </Link>
+                        );
+                      })()
+                    ) : (
+                      <Link to="/register/student" className={buttonVariants({ size: "lg", className: "rounded-lg" })}>Register Now <ArrowRight className="w-4 h-4 ml-2" /></Link>
+                    )}
                     <button onClick={() => setSelectedEvent(null)} className={buttonVariants({ size: "lg", variant: "outline", className: "rounded-lg" })}>Close</button>
                   </div>
                 </div>
@@ -556,6 +668,92 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ART MATERIALS & COLORS AVAILABLE SECTION */}
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-8">
+          <div className="max-w-4xl mx-auto text-center mb-12 md:mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs md:text-sm font-bold tracking-widest uppercase mb-4 md:mb-6">
+              <Palette className="w-4 h-4" /> Art Supplies & Colors
+            </div>
+            <h2 className="font-serif text-3xl md:text-5xl font-bold mb-4 md:mb-6">Art Materials &amp; Colors Available</h2>
+            <p className="text-muted-foreground text-sm md:text-lg leading-relaxed">
+              Premium art materials, professional grade colors, and trusted brands available for all your creative needs. From beginners to professionals, we stock everything artists need to create beautiful work.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+            {effectiveArtMaterials.map((m: any) => (
+              <motion.div
+                key={m.id || m.title + m.display_order}
+                onClick={() => setSelectedArt({ title: m.title, description: m.description, image_url: m.image_url, display_order: m.display_order })}
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 240, damping: 22 }}
+                className="group rounded-2xl border bg-background shadow-sm hover:shadow-2xl hover:border-green-500/40 transition-all overflow-hidden flex flex-col cursor-pointer select-none"
+              >
+                <div className="aspect-square bg-muted overflow-hidden relative">
+                  <img
+                    src={m.image_url}
+                    onError={(e: any) => { e.currentTarget.src = 'https://via.placeholder.com/300x300?text=Art+Material'; }}
+                    alt={m.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-background/90 border font-semibold text-muted-foreground">
+                    #{m.display_order || '•'}
+                  </div>
+                  <div className="absolute inset-0 bg-green-600/0 group-hover:bg-green-600/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="px-3 py-1.5 rounded-full bg-green-600 text-white text-xs font-bold shadow-md translate-y-2 group-hover:translate-y-0 transition-transform">
+                      Click to view
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 flex flex-col flex-1 gap-2">
+                  <h4 className="font-bold text-sm leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">{m.title}</h4>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-5 leading-relaxed mt-auto">
+                    {m.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-sm md:text-base font-medium mb-4">Need more art supplies or custom bulk orders?</p>
+            <a href="https://wa.me/2348103833239?text=Hello%20TPSC%2C%20I%20want%20to%20purchase%20ART%20MATERIALS%20from%20your%20website%20Art%20Materials%20%26%20Colors%20Available%20section." target="_blank" rel="noopener noreferrer" className={["inline-flex items-center gap-2", "px-6 py-3 rounded-full font-bold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all", "bg-gradient-to-r from-green-600 via-green-500 to-emerald-600", "bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite] hover:from-green-700 hover:via-green-600 hover:to-emerald-700"].join(' ')}>
+              <PhoneCall className="w-4 h-4 md:w-5 md:h-5" /> CONTACT US TO PURCHASE
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Art Material Full-Image Lightbox Modal (image ONLY — no title / no description) */}
+      <Dialog open={!!selectedArt} onOpenChange={(o) => !o && setSelectedArt(null)}>
+        <DialogContent className="max-w-6xl w-[96vw] p-0 border-none bg-black/95 backdrop-blur-sm shadow-[0_0_120px_rgba(0,0,0,0.5)]">
+          {selectedArt && (
+            <>
+              <DialogHeader className="sr-only">
+                <DialogTitle>{selectedArt.title || 'Art Material Image'}</DialogTitle>
+              </DialogHeader>
+              <button
+                onClick={() => setSelectedArt(null)}
+                className="absolute right-4 top-4 z-30 rounded-full p-3 bg-black/60 hover:bg-black/90 text-white shadow-xl transition-colors border border-white/10"
+                aria-label="Close full image"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <div className="relative min-h-[60vh] md:min-h-[80vh] max-h-[92vh] flex items-center justify-center p-4 md:p-10 overflow-hidden" onClick={() => setSelectedArt(null)}>
+                <img
+                  src={selectedArt.image_url}
+                  onError={(e: any) => { e.currentTarget.src = 'https://via.placeholder.com/1200x1200?text=Art+Material'; }}
+                  alt={selectedArt.title || 'Art material product photo'}
+                  className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-xl select-none"
+                  draggable={false}
+                />
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* PARTNER & SPONSOR SECTION */}
       <section id="sponsor-section" className="py-16 md:py-24 bg-muted/40">
         <div className="container mx-auto px-4 sm:px-8">
@@ -671,7 +869,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
@@ -724,6 +922,20 @@ export default function Home() {
                 <CardContent>
                   <p className="text-muted-foreground">
                     Special Control Unit Against Money Laundering (SCUML) registration for Designated Non-Financial Institutions (DNFIs). We guide eligible organizations through the registration requirements and compliance process.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
+                <CardHeader>
+                  <div className="flex items-center gap-4 mb-3">
+                    <img src="https://i.ibb.co/G3vcTnQp/IMG-20260728-WA0041.jpg" alt="Visa Assistance" className="w-12 h-12 object-contain" />
+                    <CardTitle className="text-xl font-serif">Visa Assistance</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    We help you to process your work, study, tourism, visit and family reunification visa
                   </p>
                 </CardContent>
               </Card>

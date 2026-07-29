@@ -1,11 +1,12 @@
+import React, { useState, useMemo, useEffect } from 'react';
 import HeroSlider from '@/components/common/HeroSlider';
-import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useAppStore } from '@/store';
+import { fetchActivities } from '@/lib/supabase';
 
 const allCategories = ["DRAWING WORKSHOP & EVENT", "AWARD EVENT", "ARTWORK EXHIBITION", "OTHERS"];
 const allContests = ["7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th"];
@@ -41,13 +42,40 @@ const defaultActivities = [
 ];
 
 export default function Activities() {
-  const { activities } = useAppStore();
+  const { _hasHydrated, activities } = useAppStore();
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
   const [selectedContest, setSelectedContest] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeRegion, setActiveRegion] = useState<string>("all");
 
   const regions = ['Europe', 'Africa', 'Asia', 'Americas'];
+
+  useEffect(() => {
+    let cancelled = false;
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const hydrate = async () => {
+      try {
+        const rows = await fetchActivities();
+        if (cancelled) return;
+        if (Array.isArray(rows) && rows.length > 0) {
+          useAppStore.setState((prev: any) => ({
+            activities: rows,
+            _lastSyncedAt: Date.now(),
+          }));
+        }
+      } catch (err) { console.error('Activities hydrate error:', err); }
+    };
+    const guard = { ran: false };
+    const once = () => {
+      if (guard.ran || cancelled) return;
+      guard.ran = true;
+      hydrate();
+    };
+    if (_hasHydrated) once();
+    timers.push(setTimeout(once, 250));
+    timers.push(setTimeout(once, 1200));
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+  }, [_hasHydrated]);
   
   const activitiesData = useMemo(() => {
     const storeMapped = activities.map(item => ({
