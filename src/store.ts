@@ -125,6 +125,20 @@ export type ArtMaterial = {
   created_at: string;
 };
 
+export type RemoteSchoolFlyer = {
+  id: string;
+  image_url: string;
+  title?: string;
+  description?: string;
+  button_text?: string;
+  button_url?: string;
+  section?: 'apply' | 'gallery';
+  display_order?: number;
+  status?: 'active' | 'archived';
+  created_at?: string;
+  updated_at?: string;
+};
+
 interface AppState {
   _hasHydrated: boolean;
   _setHasHydrated: (val: boolean) => void;
@@ -185,6 +199,12 @@ interface AppState {
   updateArtMaterial: (id: string, item: Partial<ArtMaterial>) => void;
   removeArtMaterial: (id: string) => void;
   replaceArtMaterials: (items: ArtMaterial[]) => void;
+
+  remoteSchoolFlyers: RemoteSchoolFlyer[];
+  addRemoteSchoolFlyer: (item: Omit<RemoteSchoolFlyer, 'id' | 'created_at'> & { created_at?: string }) => RemoteSchoolFlyer;
+  updateRemoteSchoolFlyer: (id: string, item: Partial<RemoteSchoolFlyer>) => void;
+  removeRemoteSchoolFlyer: (id: string) => void;
+  replaceRemoteSchoolFlyers: (items: RemoteSchoolFlyer[]) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -339,6 +359,27 @@ export const useAppStore = create<AppState>()(
         artMaterials: state.artMaterials.filter(m => m.id !== id)
       })),
       replaceArtMaterials: (items) => set({ artMaterials: Array.isArray(items) ? items : [] }),
+
+      remoteSchoolFlyers: [],
+      addRemoteSchoolFlyer: (item) => {
+        const created: RemoteSchoolFlyer = {
+          ...item,
+          id: item.id || Math.random().toString(36).substr(2, 12),
+          created_at: item.created_at || new Date().toISOString(),
+          status: item.status || 'active',
+        } as RemoteSchoolFlyer;
+        set((state) => ({
+          remoteSchoolFlyers: [...state.remoteSchoolFlyers, created]
+        }));
+        return created;
+      },
+      updateRemoteSchoolFlyer: (id, item) => set((state) => ({
+        remoteSchoolFlyers: state.remoteSchoolFlyers.map(f => f.id === id ? { ...f, ...item } : f)
+      })),
+      removeRemoteSchoolFlyer: (id) => set((state) => ({
+        remoteSchoolFlyers: state.remoteSchoolFlyers.filter(f => f.id !== id)
+      })),
+      replaceRemoteSchoolFlyers: (items) => set({ remoteSchoolFlyers: Array.isArray(items) ? items : [] }),
     }),
     {
       name: 'tpsc-storage',

@@ -18,23 +18,30 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
 
-export const saveToSupabaseTable = async (tableName: string, data: any) => {
-  if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing' };
+export const saveToSupabaseTable = async (tableName: string, data: any, options?: { omitIdForInsert?: boolean }) => {
+  if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing', data: null as any };
   try {
-    const hasId = typeof data === 'object' && data !== null && 'id' in data;
+    const isObject = typeof data === 'object' && data !== null;
+    const hasId = isObject && 'id' in data;
+    const omitId = Boolean(options?.omitIdForInsert);
     const build = supabase.from(tableName) as any;
-    const query = hasId
-      ? build.upsert(data, { onConflict: 'id', ignoreDuplicates: false })
-      : build.insert(data);
-    const { error } = await query;
+    let query: any;
+    if (hasId && !omitId) {
+      query = build.upsert(data, { onConflict: 'id', ignoreDuplicates: false }).select();
+    } else {
+      const insertPayload: any = isObject ? { ...data } : data;
+      if (isObject && omitId && 'id' in insertPayload) delete insertPayload.id;
+      query = build.insert(insertPayload).select();
+    }
+    const { data: resultData, error } = await query;
     if (error) {
        console.warn(`Could not save to Supabase ${tableName} table:`, error.message);
-       return { success: false, error: error.message };
+       return { success: false, error: error.message, data: null as any };
     }
-    return { success: true };
+    return { success: true, data: Array.isArray(resultData) ? resultData : null as any };
   } catch (err: any) {
     console.warn(`Supabase upsert to ${tableName} failed:`, err.message);
-    return { success: false, error: err.message };
+    return { success: false, error: err.message, data: null as any };
   }
 };
 

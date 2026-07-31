@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Users, GraduationCap, DollarSign, Activity, Check, Download, Trash2, Key, UploadCloud, Link as LinkIcon, Image as ImageIcon, Video, Plus, Database, Calendar, ArrowRight, BookOpen, Sparkles, MapPin, Palette } from 'lucide-react'
+import { Users, GraduationCap, DollarSign, Activity, Check, Download, Trash2, Key, UploadCloud, Link as LinkIcon, Image as ImageIcon, Video, Plus, Database, Calendar, ArrowRight, BookOpen, Sparkles, MapPin, Palette, Pencil } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -61,7 +61,9 @@ const handleFileUpload = async (file: File, bucket: string, path: string) => {
       console.warn(`Supabase storage upload failed for ${file.name}, using inline base64 (${Math.round(dataUrl.length / 1024)}KB). Reason: ${msg}`);
       return dataUrl;
     } catch (fallbackErr: any) {
-      const fbMsg = typeof fallbackErr?.message ?? String(fallbackErr);
+      const fbMsg = fallbackErr && typeof fallbackErr.message === 'string' && fallbackErr.message.length > 0
+        ? fallbackErr.message
+        : (fallbackErr === null || fallbackErr === undefined ? String(fallbackErr) : String(fallbackErr));
       console.error('Supabase upload failed AND fallback encode also failed:', fallbackErr);
       throw new Error(`Upload failed: ${msg}. Fallback also failed: ${fbMsg}`);
     }
@@ -122,6 +124,7 @@ export default function Dashboard() {
     skillProgrammes, addSkillProgramme, updateSkillProgramme, removeSkillProgramme, setActiveSkillProgramme, replaceSkillProgrammes,
     artMaterials, addArtMaterial, updateArtMaterial, removeArtMaterial, replaceArtMaterials, replaceSkillGallery, replaceSkillHighlights,
     replaceWinnersArtwork, replaceActivities, replaceVideos, replaceArtworkGallery,
+    remoteSchoolFlyers, addRemoteSchoolFlyer, updateRemoteSchoolFlyer, removeRemoteSchoolFlyer, replaceRemoteSchoolFlyers,
   } = useAppStore();
   
   const [newPassword, setNewPassword] = useState('');
@@ -223,6 +226,14 @@ export default function Dashboard() {
   const [eventButtonUrl, setEventButtonUrl] = useState('');
   const [isUploadingEvent, setIsUploadingEvent] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [eventEditingId, setEventEditingId] = useState<string | null>(null);
+  const [eventEditingFlyerUrl, setEventEditingFlyerUrl] = useState('');
+
+  const resetEventForm = () => {
+    setEventTitle(''); setEventDescription(''); setEventFile(null); setEventImageUrls('');
+    setEventStatus('upcoming'); setEventType('competition'); setEventButtonText(''); setEventButtonUrl('');
+    setEventEditingId(null); setEventEditingFlyerUrl('');
+  };
 
   const [contentError, setContentError] = useState('');
 
@@ -510,6 +521,112 @@ export default function Dashboard() {
     if (artEditingId === m.id) resetArtForm();
   };
 
+  // ============ REMOTE SCHOOL FLYERS STATE & HANDLERS ============
+  const [flyerTitle, setFlyerTitle] = useState('');
+  const [flyerDescription, setFlyerDescription] = useState('');
+  const [flyerImageUrl, setFlyerImageUrl] = useState('');
+  const [flyerFile, setFlyerFile] = useState<File|null>(null);
+  const [flyerButtonText, setFlyerButtonText] = useState('');
+  const [flyerButtonUrl, setFlyerButtonUrl] = useState('');
+  const [flyerDisplayOrder, setFlyerDisplayOrder] = useState<number>(1);
+  const [flyerEditingId, setFlyerEditingId] = useState<string|null>(null);
+  const [flyerEditingImageUrl, setFlyerEditingImageUrl] = useState('');
+  const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
+  const resetFlyerForm = () => {
+    setFlyerTitle(''); setFlyerDescription(''); setFlyerImageUrl('');
+    setFlyerFile(null); setFlyerEditingId(null); setFlyerEditingImageUrl('');
+    setFlyerButtonText(''); setFlyerButtonUrl('');
+    setFlyerDisplayOrder(remoteSchoolFlyers.length + 1);
+  };
+
+  const handleAddFlyer = async () => {
+    setContentError('');
+    const needsImage = !flyerEditingId || (!flyerEditingImageUrl && !flyerFile && !flyerImageUrl.trim());
+    if (needsImage && !flyerFile && !flyerImageUrl.trim()) return setContentError('Please provide a flyer image file or image URL.');
+    setIsUploadingFlyer(true);
+    let dbSaved = false;
+    try {
+      let finalUrl = flyerEditingImageUrl || flyerImageUrl.trim();
+      if (flyerFile) {
+        const sanitizedFileName = flyerFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        finalUrl = await handleFileUpload(flyerFile, 'tpsc-images', `remote-school-flyers/${fileName}`);
+      }
+      const payload: any = {
+        title: flyerTitle.trim(),
+        description: flyerDescription.trim(),
+        image_url: finalUrl || '',
+        button_text: flyerButtonText.trim(),
+        button_url: flyerButtonUrl.trim(),
+        section: 'apply',
+        display_order: Number(flyerDisplayOrder) || 0,
+        status: 'active',
+      };
+      let saveResult: { success: boolean; error?: string; data?: any[] | null } = { success: false, error: 'Flyer save failed.', data: null };
+      if (flyerEditingId) {
+        updateRemoteSchoolFlyer(flyerEditingId, payload);
+        saveResult = await saveToSupabaseTable('remote_school_flyers', { id: flyerEditingId, ...payload });
+      } else {
+        // Optimistically add to Zustand with a temp ID so the UI shows it instantly.
+        const created = addRemoteSchoolFlyer(payload);
+        // For NEW rows: omit the Zustand-generated temp id so Supabase can
+        // generate a proper default UUID (gen_random_uuid()) via `DEFAULT`.
+        // Otherwise passing a non-UUID string id causes Postgres to throw.
+        saveResult = await saveToSupabaseTable('remote_school_flyers', { id: created.id, ...payload }, { omitIdForInsert: true });
+      }
+      dbSaved = Boolean(saveResult?.success);
+      // Once saved to Supabase: re-sync the Zustand store so that the in-memory
+      // entries use the REAL DB-generated UUID ids (not the temp random string).
+      // This ensures subsequent Edit/Delete operations match DB rows correctly.
+      if (dbSaved) {
+        try {
+          const { data, error } = await supabase
+            .from('remote_school_flyers')
+            .select('*')
+            .order('display_order', { ascending: true, nullsFirst: false })
+            .order('created_at', { ascending: false });
+          if (!error && Array.isArray(data)) {
+            const applyOnly = data.filter((r: any) => !r.section || r.section === 'apply' || r.section === null);
+            if (applyOnly.length > 0) replaceRemoteSchoolFlyers(applyOnly);
+          }
+        } catch { /* ignore sync error — state is already correct locally */ }
+      }
+      resetFlyerForm();
+      if (!dbSaved) {
+        const msg = saveResult?.error || 'Flyer could not be saved to the database.';
+        setContentError(
+          `${msg} (Flyer is still shown locally so you won't lose it — try clicking "Add Flyer" again, or check the browser console for details.)`
+        );
+      }
+    } catch (e: any) {
+      setContentError(e.message || 'Flyer save failed.');
+    } finally {
+      setIsUploadingFlyer(false);
+    }
+  };
+
+  const handleEditFlyer = (f: any) => {
+    setFlyerEditingId(f.id);
+    setFlyerEditingImageUrl(f.image_url || '');
+    setFlyerTitle(f.title || '');
+    setFlyerDescription(f.description || '');
+    setFlyerImageUrl('');
+    setFlyerFile(null);
+    setFlyerButtonText(f.button_text || '');
+    setFlyerButtonUrl(f.button_url || '');
+    setFlyerDisplayOrder(f.display_order ?? (remoteSchoolFlyers.length + 1));
+  };
+
+  const handleDeleteFlyer = async (f: any) => {
+    if (!window.confirm('Delete this Remote School flyer?')) return;
+    removeRemoteSchoolFlyer(f.id);
+    await deleteFromSupabaseTable('remote_school_flyers', 'id', f.id);
+    if (f.image_url && !f.image_url.includes('ibb.co') && !f.image_url.includes('placeholder')) {
+      await deleteFileFromSupabase('tpsc-images', f.image_url);
+    }
+    if (flyerEditingId === f.id) resetFlyerForm();
+  };
+
   const handleAddWinner = async () => {
     setContentError('');
     if (!winnerTitle || !winnerProjectName || !winnerAge || !winnerPersonName || !winnerCountry) return setContentError('Please fill all fields.');
@@ -714,16 +831,31 @@ export default function Dashboard() {
     }
   };
 
+  const handleEditEvent = (event: any) => {
+    setContentError('');
+    setEventEditingId(event.id || event.title);
+    setEventEditingFlyerUrl(event.flyer_url || '');
+    setEventTitle(event.title || '');
+    setEventDescription(event.description || '');
+    setEventType(event.event_type || 'competition');
+    setEventStatus(event.status || 'upcoming');
+    setEventButtonText(event.button_text || '');
+    setEventButtonUrl(event.button_url || '');
+    setEventFile(null);
+    setEventImageUrls('');
+  };
+
   const handleAddEvent = async () => {
     setContentError('');
     if (!eventTitle || !eventDescription) return setContentError('Please fill in title and description.');
-    if (!eventFile && !eventImageUrls.trim()) return setContentError('Please provide a flyer image file or URL.');
+    const needsFlyer = !eventEditingId || (!eventEditingFlyerUrl && !eventFile && !eventImageUrls.trim());
+    if (needsFlyer && !eventFile && !eventImageUrls.trim()) return setContentError('Please provide a flyer image file or URL.');
     
     setIsUploadingEvent(true);
     try {
-      let uploadedUrl = '';
+      let uploadedUrl = eventEditingFlyerUrl || '';
 
-      const commonPayload = {
+      const commonPayload: any = {
         title: eventTitle,
         description: eventDescription,
         event_type: eventType,
@@ -731,35 +863,44 @@ export default function Dashboard() {
         button_text: eventButtonText.trim() || '',
         button_url: eventButtonUrl.trim() || ''
       };
+
+      if (eventEditingId) {
+        commonPayload.id = eventEditingId;
+      }
       
       if (eventFile) {
         const sanitizedFileName = eventFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
         const fileName = `${Date.now()}_${sanitizedFileName}`;
         uploadedUrl = await handleFileUpload(eventFile, 'tpsc-images', `events/${fileName}`);
-        
-        const payload = { ...commonPayload, flyer_url: uploadedUrl };
-        
-        const dbRes = await saveToSupabaseTable('upcoming_events', payload);
-        if (!dbRes.success) throw new Error(dbRes.error);
-        
-        setUpcomingEvents([...upcomingEvents, { ...payload }]);
       }
 
-      if (eventImageUrls.trim()) {
+      const savedIds: string[] = [];
+      
+      if (uploadedUrl) {
+        const payload = { ...commonPayload, flyer_url: uploadedUrl };
+        const dbRes = await saveToSupabaseTable('upcoming_events', payload);
+        if (!dbRes.success) throw new Error(dbRes.error);
+        savedIds.push(payload.id || payload.title);
+      }
+
+      if (eventImageUrls.trim() && !eventEditingId) {
         const urls = eventImageUrls.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
         for (const url of urls) {
           const payload = { ...commonPayload, flyer_url: url };
-          
+          delete payload.id;
           const dbRes = await saveToSupabaseTable('upcoming_events', payload);
           if (!dbRes.success) throw new Error(dbRes.error);
-          
-          setUpcomingEvents(prev => [...prev, { ...payload }]);
+          savedIds.push(payload.title);
         }
       }
 
-      setEventTitle(''); setEventDescription(''); setEventFile(null); setEventImageUrls(''); setEventStatus('upcoming'); setEventButtonText(''); setEventButtonUrl('');
+      // Refresh from DB to get exact state
+      const { data: refreshed, error } = await supabase.from('upcoming_events').select('*');
+      if (!error && refreshed) setUpcomingEvents(refreshed);
+
+      resetEventForm();
     } catch (e: any) {
-      setContentError(`Error adding event: ${e.message}`);
+      setContentError(`Error ${eventEditingId ? 'updating' : 'adding'} event: ${e.message}`);
     } finally {
       setIsUploadingEvent(false);
     }
@@ -767,9 +908,14 @@ export default function Dashboard() {
 
   const handleDeleteEvent = async (event: any) => {
     try {
-      const res = await deleteFromSupabaseTable('upcoming_events', 'title', event.title);
+      const matchCol = event.id ? 'id' : 'title';
+      const matchVal = event.id || event.title;
+      const res = await deleteFromSupabaseTable('upcoming_events', matchCol, matchVal);
       if (res.success) {
-        setUpcomingEvents(upcomingEvents.filter(e => e.title !== event.title));
+        if (eventEditingId && (eventEditingId === event.id || eventEditingId === event.title)) {
+          resetEventForm();
+        }
+        setUpcomingEvents(upcomingEvents.filter(e => (e.id || e.title) !== (event.id || event.title)));
       }
     } catch (e: any) {
       setContentError(`Error deleting event: ${e.message}`);
@@ -857,7 +1003,27 @@ export default function Dashboard() {
         }
       } catch (e) { console.error('Load artMaterials failed:', e); }
 
-      // 7. Skill gallery (INACTIVE TABLE — Dashboard UI says REMOVED.
+      // 7. Remote school flyers — hydrate from Supabase.
+      //    NOTE: Only "apply" section flyers are admin-editable.
+      //    The 9 Gallery flyers (after Why Choose Us) are hard-coded static
+      //    images on the website — they are intentionally NOT stored here.
+      try {
+        const { data, error } = await supabase
+          .from('remote_school_flyers')
+          .select('*')
+          .order('display_order', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          const applyOnly = data.filter((r: any) => !r.section || r.section === 'apply' || r.section === null);
+          // Only replace Zustand if there are actual "apply" flyers in the DB.
+          // This prevents wiping the local store (which may have optimistic adds from
+          // being cleared when the DB only contains the legacy gallery rows
+          // (which are now static and removed from admin).
+          if (applyOnly.length > 0) replaceRemoteSchoolFlyers(applyOnly);
+        }
+      } catch (e) { console.error('Load remoteSchoolFlyers failed:', e); }
+
+      // 8. Skill gallery (INACTIVE TABLE — Dashboard UI says REMOVED.
       //    Hydrate anyway if rows exist.)
       try {
         const { data, error } = await supabase.from('skill_gallery').select('*').order('display_order', { ascending: true, nullsFirst: false });
@@ -967,6 +1133,7 @@ export default function Dashboard() {
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="skill-acquisition">Skill Acquisition</TabsTrigger>
+          <TabsTrigger value="remote-school-flyers">Remote School Flyers</TabsTrigger>
           <TabsTrigger value="art-materials">Art Materials</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -1491,10 +1658,26 @@ export default function Dashboard() {
             {/* Upcoming Events Management */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5" /> Upcoming Events</CardTitle>
-                <CardDescription>Add event flyers and manage upcoming competitions, festivals, and exhibitions.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5" /> Upcoming Events {eventEditingId && <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700 border-amber-200">EDITING MODE</Badge>}</CardTitle>
+                <CardDescription>Add event flyers and manage upcoming competitions, festivals, and exhibitions. Use EDIT to add custom button links to existing events.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {eventEditingId && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40">
+                    <div className="w-12 h-12 shrink-0 rounded overflow-hidden border border-amber-200 bg-background">
+                      {eventEditingFlyerUrl ? (
+                        <img src={eventEditingFlyerUrl} alt="Current flyer" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Currently Editing</div>
+                      <div className="text-sm font-bold truncate">{eventTitle || '—'}</div>
+                      <div className="text-[11px] text-amber-600/80 dark:text-amber-300/70">Upload a new flyer or leave it as-is to keep the existing image. Modify button text/URL below.</div>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-3">
                    <div>
                      <Label>Event Title</Label>
@@ -1540,7 +1723,7 @@ export default function Dashboard() {
                      </div>
                    </div>
                    <div>
-                     <Label>Event Flyer Image (Max 5MB)</Label>
+                     <Label>Event Flyer Image {eventEditingId && <span className="text-[11px] text-muted-foreground ml-1">(Optional — keep current)</span>} (Max 5MB)</Label>
                      <div className="mt-1 space-y-3">
                        {eventFile ? (
                           <div className="flex items-center gap-2 text-sm border p-2 rounded">
@@ -1589,7 +1772,14 @@ export default function Dashboard() {
                      If you leave both empty, the flyer modal will show the standard "Register Now" button pointing to your website&apos;s registration page. Fill in both for flyers that need an external link (forms, event pages, sponsor links, etc.).
                    </p>
                    
-                   <Button onClick={handleAddEvent} disabled={isUploadingEvent} className="w-full"><Plus className="w-4 h-4 mr-2"/> {isUploadingEvent ? 'Adding...' : 'Add Event'}</Button>
+                   {eventEditingId ? (
+                     <div className="flex gap-2 pt-1">
+                       <Button onClick={handleAddEvent} disabled={isUploadingEvent} className="flex-1"><Plus className="w-4 h-4 mr-2"/> {isUploadingEvent ? 'Saving...' : 'Update Event'}</Button>
+                       <Button type="button" variant="outline" onClick={resetEventForm} disabled={isUploadingEvent}>Cancel Edit</Button>
+                     </div>
+                   ) : (
+                     <Button onClick={handleAddEvent} disabled={isUploadingEvent} className="w-full"><Plus className="w-4 h-4 mr-2"/> {isUploadingEvent ? 'Adding...' : 'Add Event'}</Button>
+                   )}
                 </div>
                 
                 {upcomingEvents.length > 0 && (
@@ -1604,12 +1794,18 @@ export default function Dashboard() {
                            <div className="flex-1 overflow-hidden min-w-0">
                              <p className="text-sm font-medium truncate">{item.title}</p>
                              <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                             <div className="flex gap-2 mt-1">
+                             <div className="flex flex-wrap gap-2 mt-1 items-center">
                                <span className="text-xs bg-primary/10 px-2 py-0.5 rounded">{item.event_type}</span>
                                <span className="text-xs bg-blue-600/10 px-2 py-0.5 rounded text-blue-600">{item.status}</span>
+                               {(item.button_text || item.button_url) && (
+                                 <span className="text-xs bg-emerald-600/10 px-2 py-0.5 rounded text-emerald-600 font-medium">Custom CTA</span>
+                               )}
                              </div>
                            </div>
-                           <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0" onClick={() => handleDeleteEvent(item)}><Trash2 className="w-4 h-4" /></Button>
+                           <div className="flex gap-1 shrink-0">
+                             <Button size="icon" variant="ghost" className="h-7 w-7 text-primary hover:bg-primary/10" onClick={() => handleEditEvent(item)} title="Edit event / Add button link"><Pencil className="w-3.5 h-3.5" /></Button>
+                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive shrink-0" onClick={() => handleDeleteEvent(item)}><Trash2 className="w-4 h-4" /></Button>
+                           </div>
                          </div>
                        ))}
                     </div>
@@ -2018,6 +2214,161 @@ export default function Dashboard() {
                           ) : (
                             <span className="text-[10px] text-muted-foreground italic w-full text-center pt-1">Default item — add new items to manage via store</span>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="remote-school-flyers" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 flex-wrap">
+                <ImageIcon className="w-5 h-5" /> {flyerEditingId ? 'Edit Apply Flyer' : 'Add New Apply Flyer'}
+                {flyerEditingId && <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200">EDITING MODE</Badge>}
+              </CardTitle>
+              <CardDescription>
+                Manage the <strong>4 Apply flyers</strong> shown in the &quot;Apply as Student / Teacher&quot; section on the <code className="px-1.5 py-0.5 rounded bg-muted">/remote-school</code> page.
+                Each flyer shows a large image (Upload OR URL) with an optional title and description, plus a customisable CTA button.
+                Default CTA = <strong>&quot;LEARN MORE&quot; → WhatsApp group</strong>.
+                <div className="mt-2 text-[11px] text-muted-foreground">
+                  The 9 flyers in the &quot;Our Online School in Pictures&quot; gallery (after &quot;Why Choose Us?&quot;) are static images hard-coded on the website — they are intentionally NOT stored in the database and cannot be edited here.
+                </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {flyerEditingId && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40">
+                  <div className="w-20 h-24 shrink-0 rounded-lg overflow-hidden border border-amber-200 bg-background">
+                    {flyerEditingImageUrl ? (
+                      <img src={flyerEditingImageUrl} alt="Current flyer" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No image</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Currently Editing</div>
+                    <div className="text-sm font-bold truncate">{flyerTitle || '—'}</div>
+                    <div className="text-[11px] text-amber-600/80 dark:text-amber-300/70">Upload a new flyer or leave it as-is. Modify the button text/URL below to override the default.</div>
+                  </div>
+                </div>
+              )}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Title <span className="text-muted-foreground text-[11px]">(Optional)</span></Label>
+                  <Input value={flyerTitle} onChange={e => setFlyerTitle(e.target.value)} placeholder="e.g. Register as a Student" />
+                </div>
+                <div>
+                  <Label>Display Order</Label>
+                  <Input type="number" value={String(flyerDisplayOrder)} onChange={e => setFlyerDisplayOrder(Number(e.target.value))} />
+                </div>
+              </div>
+              <div>
+                <Label>Description <span className="text-muted-foreground text-[11px]">(Optional)</span></Label>
+                <textarea rows={3} className="w-full px-3 py-2 border rounded-md text-sm bg-background font-sans" value={flyerDescription} onChange={e => setFlyerDescription(e.target.value)} placeholder="Short text shown under the title on the website." />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Flyer Image URL {flyerEditingId && <span className="text-[11px] text-muted-foreground ml-1">(Optional — keep current)</span>}</Label>
+                  <Input value={flyerImageUrl} onChange={e => setFlyerImageUrl(e.target.value)} placeholder="https://i.ibb.co/...jpg" />
+                  {flyerImageUrl && !flyerFile && (
+                    <div className="rounded-lg border p-3 bg-muted/20 flex gap-3 items-center mt-2">
+                      <div className="w-20 h-24 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                        <img src={flyerImageUrl} onError={(e:any) => { e.currentTarget.style.display='none'; }} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">Preview</div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>Or upload flyer image file</Label>
+                  <div className="flex items-center gap-3">
+                    <Input type="file" accept="image/*" onChange={e => setFlyerFile(e.target.files ? e.target.files[0] : null)} />
+                    <Button variant="outline" type="button" size="sm" onClick={() => setFlyerFile(null)} disabled={!flyerFile}>Clear</Button>
+                  </div>
+                  {flyerFile && <div className="text-xs text-muted-foreground mt-1">File: {flyerFile.name} ({(flyerFile.size/1024).toFixed(1)} KB)</div>}
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Button Text <span className="text-muted-foreground text-[11px]">(Optional)</span></Label>
+                  <Input
+                    placeholder="Leave empty → default: LEARN MORE"
+                    value={flyerButtonText}
+                    onChange={e => setFlyerButtonText(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Button Link / URL <span className="text-muted-foreground text-[11px]">(Optional)</span></Label>
+                  <Input
+                    placeholder="Leave empty → default WhatsApp group"
+                    value={flyerButtonUrl}
+                    onChange={e => setFlyerButtonUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                Default button is <strong>LEARN MORE → https://chat.whatsapp.com/KYSRJs7HR3rJ9fHMxr2cSj</strong>. Fill the fields above to override any flyer.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <Button disabled={isUploadingFlyer} onClick={handleAddFlyer}>
+                  {isUploadingFlyer ? 'Saving...' : (flyerEditingId ? 'Update Flyer' : 'Add Flyer')}
+                </Button>
+                {flyerEditingId && (
+                  <Button variant="ghost" type="button" onClick={resetFlyerForm}>Cancel Edit</Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2"><Database className="w-5 h-5" /> Saved Apply Flyers ({remoteSchoolFlyers.length})</div>
+                <div className="text-xs text-muted-foreground">Public page: only flyers with status = &quot;active&quot; appear in the Apply section.</div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {remoteSchoolFlyers.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-xl text-muted-foreground">
+                  <ImageIcon className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">No Apply flyers saved yet.</p>
+                  <p className="text-xs mt-1 max-w-md mx-auto">
+                    The <code className="px-1 py-0.5 rounded bg-muted">/remote-school</code> page shows 4 default hard-coded Apply flyers (Student registration, Teacher application, etc.).
+                    Add flyers here to override those defaults on the website.
+                    The 9-image gallery after &quot;Why Choose Us?&quot; is always static on the website and is not stored here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {remoteSchoolFlyers.map((f: any) => (
+                    <div key={f.id || `${f.image_url}-${f.display_order}`} className="rounded-xl border bg-background shadow-sm overflow-hidden flex flex-col">
+                      <div className="aspect-[3/4] bg-muted relative overflow-hidden">
+                        <img src={f.image_url} onError={(e:any) => { e.currentTarget.src = 'https://via.placeholder.com/300x400?text=Apply+Flyer'; }} alt={f.title || 'Apply Flyer'} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="p-4 flex flex-col flex-1 gap-3">
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-bold text-sm leading-tight line-clamp-2">{f.title || '(No title)'}</h4>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-muted font-medium shrink-0">#{f.display_order ?? '—'}</span>
+                          </div>
+                          {f.description && <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-3">{f.description}</p>}
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-sky-600/10 text-sky-700 dark:text-sky-400 font-semibold border border-sky-200/60 dark:border-sky-800/40">📋 Apply</span>
+                            {f.button_text && <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600/10 text-emerald-600 font-medium truncate">CTA: {f.button_text}</span>}
+                            {!f.button_text && !f.button_url && <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground italic">Default CTA</span>}
+                            {f.button_url && !f.button_text && <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-600/10 text-indigo-600 font-medium">Custom URL</span>}
+                          </div>
+                        </div>
+                        <div className="mt-auto flex gap-2 pt-2 border-t">
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditFlyer(f)}>Edit</Button>
+                          <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleDeleteFlyer(f)}>
+                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                          </Button>
                         </div>
                       </div>
                     </div>

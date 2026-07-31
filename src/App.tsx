@@ -16,6 +16,7 @@ import VideoGallery from '@/pages/public/VideoGallery';
 import Exhibition from '@/pages/public/Exhibition';
 import ArtworkGallery from '@/pages/public/ArtworkGallery';
 import SkillAcquisition from '@/pages/public/SkillAcquisition';
+import RemoteSchool from '@/pages/public/RemoteSchool';
 
 // Admin Pages
 import Dashboard from '@/pages/admin/Dashboard';
@@ -30,6 +31,7 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
+            <Route path="/remote-school" element={<RemoteSchool />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/exhibition" element={<Exhibition />} />
             <Route path="/artwork-gallery" element={<ArtworkGallery />} />

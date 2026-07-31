@@ -231,34 +231,77 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {upcomingEvents.map((event, idx) => (
-              <motion.div
-                key={event.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                onClick={() => setSelectedEvent(event)}
-              >
-                <Card className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col border-none cursor-pointer group">
-                  <div className="relative w-full h-64 md:h-72 overflow-hidden bg-muted">
-                    <img 
-                      src={event.flyer_url || event.flyer} 
-                      alt={event.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-white font-bold text-lg">Click to view details</span>
+            {upcomingEvents.map((event, idx) => {
+              const customText = (event.button_text || '').trim();
+              const customUrl = (event.button_url || '').trim();
+              const label = customText || 'Register Now';
+              const href = customUrl ? normalizeUrl(customUrl) : '/register/student';
+              const isExternal = /^https?:\/\//i.test(href);
+              const ctaIcon = isExternal ? <ExternalLink className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />;
+
+              return (
+                <motion.div
+                  key={event.id || event.title + idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="h-full flex flex-col"
+                >
+                  <Card className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col border-none group">
+                    <div
+                      className="relative w-full h-64 md:h-72 overflow-hidden bg-muted cursor-pointer"
+                      onClick={() => setSelectedEvent(event)}
+                    >
+                      <img
+                        src={event.flyer_url || event.flyer}
+                        alt={event.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white font-bold text-lg">Click to view details</span>
+                      </div>
                     </div>
-                  </div>
-                  <CardContent className="p-6 md:p-8 flex-1 flex flex-col">
-                    <h3 className="text-xl md:text-2xl font-bold mb-2">{event.title}</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">{event.description}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                    <CardContent className="p-6 md:p-8 flex-1 flex flex-col gap-4">
+                      <div>
+                        <h3 className="text-xl md:text-2xl font-bold mb-2">{event.title}</h3>
+                        <p className="text-sm md:text-base text-muted-foreground">{event.description}</p>
+                      </div>
+                      <div className="mt-auto pt-2 border-t border-border/60 flex items-center justify-between gap-3">
+                        <button
+                          onClick={() => setSelectedEvent(event)}
+                          className="text-xs md:text-sm text-muted-foreground hover:text-primary font-medium transition-colors inline-flex items-center gap-1"
+                        >
+                          View Details <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        </button>
+                        {isExternal ? (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={buttonVariants({ size: "sm", className: "rounded-full text-xs md:text-sm h-9 px-4 md:px-5 font-semibold shrink-0" })}
+                          >
+                            {label}
+                            {ctaIcon}
+                          </a>
+                        ) : (
+                          <Link
+                            to={href}
+                            onClick={(e) => e.stopPropagation()}
+                            className={buttonVariants({ size: "sm", className: "rounded-full text-xs md:text-sm h-9 px-4 md:px-5 font-semibold shrink-0" })}
+                          >
+                            {label}
+                            {ctaIcon}
+                          </Link>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

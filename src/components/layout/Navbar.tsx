@@ -16,6 +16,7 @@ export default function Navbar() {
     { label: 'HOME', href: '/' },
     { label: 'SKILL ACQUISITION', href: '/skill-acquisition' },
     { label: 'ABOUT CONTEST', href: '/about' },
+    { label: 'REMOTE SCHOOL', href: '/remote-school' },
     { label: "WINNERS' ARTWORK", href: '/winners-artwork' },
     { label: 'ACTIVITIES IN EACH COUNTRY', href: '/activities' },
     { label: 'VIDEO GALLERY', href: '/video-gallery' },
