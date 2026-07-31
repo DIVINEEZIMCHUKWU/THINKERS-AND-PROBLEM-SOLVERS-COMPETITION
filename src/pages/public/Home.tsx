@@ -916,7 +916,7 @@ export default function Home() {
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
-                    <img src="/Images/CAC.jpeg" alt="CAC" className="w-12 h-12 object-contain" />
+                    <img src="https://i.ibb.co/q3L5vRJX/photo-2026-07-31-15-35-47.jpg" alt="CAC" className="w-12 h-12 object-contain" />
                     <CardTitle className="text-xl font-serif">CAC — Corporate Affairs Commission</CardTitle>
                   </div>
                 </CardHeader>
@@ -930,7 +930,7 @@ export default function Home() {
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
-                    <img src="/Images/NAFDAC.PNG" alt="NAFDAC" className="w-12 h-12 object-contain" />
+                    <img src="https://i.ibb.co/zH64Vb2c/photo-2026-07-31-15-35-48-2.jpg" alt="NAFDAC" className="w-12 h-12 object-contain" />
                     <CardTitle className="text-xl font-serif">NAFDAC Registration</CardTitle>
                   </div>
                 </CardHeader>
@@ -944,7 +944,7 @@ export default function Home() {
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
-                    <img src="/Images/TIN.PNG" alt="TIN" className="w-12 h-12 object-contain" />
+                    <img src="https://i.ibb.co/HfWJnpmS/photo-2026-07-31-15-35-48.jpg" alt="TIN" className="w-12 h-12 object-contain" />
                     <CardTitle className="text-xl font-serif">TIN — Tax Identification Number</CardTitle>
                   </div>
                 </CardHeader>
@@ -958,7 +958,7 @@ export default function Home() {
               <Card className="rounded-3xl border-none shadow-lg hover:shadow-xl transition-shadow bg-background/50 backdrop-blur">
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
-                    <img src="/Images/Coat.jpeg" alt="SCUML" className="w-12 h-12 object-contain" />
+                    <img src="https://i.ibb.co/Dfn8QZHr/photo-2026-07-31-15-35-49.jpg" alt="SCUML" className="w-12 h-12 object-contain" />
                     <CardTitle className="text-xl font-serif">SCUML Registration</CardTitle>
                   </div>
                 </CardHeader>

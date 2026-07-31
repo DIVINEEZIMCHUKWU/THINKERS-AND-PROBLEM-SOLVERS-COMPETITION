@@ -15,7 +15,7 @@ import {
 
 const STUDENT_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdVSXi26Psdh3VORwNDZDyYu9gfDHkQulAjlEaK9cF2zo367Q/viewform?usp=publish-editor';
 const TEACHER_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdVSXi26Psdh3VORwNDZDyYu9gfDHkQulAjlEaK9cF2zo367Q/viewform?usp=publish-editor';
-const WHATSAPP_GROUP = 'https://chat.whatsapp.com/KY';
+const WHATSAPP_GROUP = 'https://chat.whatsapp.com/KYSRJs7HR3rJ9fHMxr2cSj';
 const FLYER_DEFAULT_CTA_URL = 'https://chat.whatsapp.com/KYSRJs7HR3rJ9fHMxr2cSj';
 const FLYER_DEFAULT_CTA_TEXT = 'LEARN MORE';
 
