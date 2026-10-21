@@ -60,12 +60,111 @@ export const deleteFromSupabaseTable = async (tableName: string, matchColumn: st
   }
 };
 
-export const updateAdminPassword = async (newPassword: string) => {
+export type AdminStudent = {
+  id: string;
+  registrationNumber: string;
+  fullName: string;
+  dob: string;
+  gender: string;
+  country: string;
+  state: string;
+  lga: string;
+  schoolName: string;
+  registrationCategory: string;
+  level: string;
+  studentClass: string;
+  passportUrl: string;
+  paymentProofUrl: string;
+  registeredAt: string;
+  status: 'Pending' | 'Verified';
+};
+
+export const fetchStudents = async (password: string): Promise<AdminStudent[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Supabase URL/Key missing');
+
+  const pageSize = 1000;
+  const rows: any[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.rpc('admin_list_students', {
+      p_admin_password: password,
+      p_offset: offset,
+      p_limit: pageSize,
+    });
+    if (error) throw error;
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  return rows.map((row) => ({
+    id: _s(row.id || row.registration_number),
+    registrationNumber: _s(row.registration_number),
+    fullName: _s(row.full_name),
+    dob: _s(row.dob),
+    gender: _s(row.gender),
+    country: _s(row.country),
+    state: _s(row.state),
+    lga: _s(row.lga),
+    schoolName: _s(row.school_name),
+    registrationCategory: _s(row.registration_category || row.category),
+    level: _s(row.level),
+    studentClass: _s(row.student_class),
+    passportUrl: _s(row.passport_url),
+    paymentProofUrl: _s(row.payment_proof_url),
+    registeredAt: _toISODate(row.registered_at),
+    status: row.status === 'Verified' ? 'Verified' : 'Pending',
+  }));
+};
+
+export const verifyAdminPassword = async (password: string) => {
+  if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing' };
+  try {
+    const { data, error } = await supabase.rpc('admin_verify_password', { p_admin_password: password });
+    if (error) return { success: false, error: error.message };
+    return { success: data === true, error: data === true ? undefined : 'Invalid password.' };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Admin password verification failed' };
+  }
+};
+
+export const updateStudentStatusInSupabase = async (id: string, status: 'Pending' | 'Verified', password: string) => {
+  if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing' };
+  try {
+    const { data, error } = await supabase.rpc('admin_update_student_status', {
+      p_admin_password: password,
+      p_student_id: id,
+      p_status: status,
+    });
+    if (error) return { success: false, error: error.message };
+    return data?.success ? { success: true } : { success: false, error: data?.error || 'Student update failed' };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Student update failed' };
+  }
+};
+
+export const deleteStudentFromSupabase = async (id: string, password: string) => {
+  if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing' };
+  try {
+    const { data, error } = await supabase.rpc('admin_delete_student', {
+      p_admin_password: password,
+      p_student_id: id,
+    });
+    if (error) return { success: false, error: error.message };
+    return data?.success ? { success: true } : { success: false, error: data?.error || 'Student deletion failed' };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Student deletion failed' };
+  }
+};
+
+export const updateAdminPassword = async (currentPassword: string, newPassword: string) => {
   if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'missing credentials' };
   try {
-    const { error } = await supabase.from('admin_settings').upsert({ id: 'admin', password: newPassword });
+    const { data, error } = await supabase.rpc('admin_set_password', {
+      p_current_password: currentPassword,
+      p_new_password: newPassword,
+    });
     if (error) return { success: false, error: error.message };
-    return { success: true };
+    return data?.success ? { success: true } : { success: false, error: data?.error || 'Password update failed' };
   } catch(e: any) {
     return { success: false, error: e.message };
   }

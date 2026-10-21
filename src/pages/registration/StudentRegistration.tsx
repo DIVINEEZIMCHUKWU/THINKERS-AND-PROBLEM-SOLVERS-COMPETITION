@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, UploadCloud, Info, Plus, Trash2, FileSpreadsheet, MessageCircle } from 'lucide-react'
-import { useAppStore } from '@/store'
 import * as XLSX from 'xlsx'
 import { countries, nigerianStates, registrationCategories, studentLevels, classOptions } from '@/data/locations'
 
@@ -60,8 +59,6 @@ export default function StudentRegistration() {
   const [uploadingFilesCount, setUploadingFilesCount] = useState(0)
   const [successData, setSuccessData] = useState<{count: number, regNumbers: string[]}>({ count: 0, regNumbers: [] })
   
-  const addStudentToStore = useAppStore(state => state.addStudent)
-
   const { register, control, handleSubmit, trigger, formState: { errors }, setValue, watch } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -202,21 +199,6 @@ export default function StudentRegistration() {
            throw new Error(dbRes.error || 'Failed to save to database');
         }
         
-        addStudentToStore({
-          registrationNumber: regNo,
-          fullName: s.fullName,
-          dob: s.dob,
-          gender: s.gender,
-          country: s.country,
-          state: s.state,
-          lga: s.lga,
-          schoolName: data.schoolName,
-          registrationCategory: s.registrationCategory,
-          level: s.level,
-          studentClass: s.studentClass,
-          passportUrl: payload.passport_url,
-          paymentProofUrl: payload.payment_proof_url
-        });
       }
 
       setSuccessData({ count: data.students.length, regNumbers: addedRegNumbers });

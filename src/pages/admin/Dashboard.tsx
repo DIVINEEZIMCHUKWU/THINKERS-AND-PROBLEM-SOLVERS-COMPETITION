@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAppStore } from '@/store'
 import AdminLogin from './AdminLogin'
-import { uploadFileToSupabase, supabase, saveToSupabaseTable, updateAdminPassword, deleteFromSupabaseTable, deleteFileFromSupabase, fetchWinnersArtwork, fetchActivities, fetchVideos, fetchArtworkGallery } from '@/lib/supabase'
+import { uploadFileToSupabase, supabase, saveToSupabaseTable, updateAdminPassword, deleteFromSupabaseTable, deleteFileFromSupabase, fetchWinnersArtwork, fetchActivities, fetchVideos, fetchArtworkGallery, fetchStudents, updateStudentStatusInSupabase, deleteStudentFromSupabase } from '@/lib/supabase'
 
 const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -116,7 +116,7 @@ const openBase64InNewTab = async (dataUrl: string, title: string = 'Document') =
 
 export default function Dashboard() {
   const { 
-    isAuthenticated, students, updateStudentStatus, removeStudent,
+    isAuthenticated, students, updateStudentStatus, removeStudent, replaceStudents,
     winnersArtwork, addWinnerArtwork, removeWinnerArtwork,
     activities, addActivity, removeActivity,
     videos, addVideo, removeVideo,
@@ -126,36 +126,107 @@ export default function Dashboard() {
     replaceWinnersArtwork, replaceActivities, replaceVideos, replaceArtworkGallery,
     remoteSchoolFlyers, addRemoteSchoolFlyer, updateRemoteSchoolFlyer, removeRemoteSchoolFlyer, replaceRemoteSchoolFlyers,
   } = useAppStore();
+  const _hasHydratedStore = useAppStore((s: any) => s._hasHydrated);
   
   const [newPassword, setNewPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
   const [pwdMsg, setPwdMsg] = useState('');
+  const [studentsError, setStudentsError] = useState('');
+  const [studentsLoading, setStudentsLoading] = useState(true);
+
+  const refreshStudents = async () => {
+    try {
+      const password = localStorage.getItem('adminPassword') || '';
+      const rows = await fetchStudents(password);
+      replaceStudents(rows as any);
+      setStudentsError('');
+    } catch (error: any) {
+      const message = String(error?.message || error || 'Could not load student registrations from Supabase.');
+      console.error('Could not load student registrations from Supabase:', error);
+      if (/admin_list_students|schema cache|could not find the function/i.test(message)) {
+        setStudentsError('Supabase is missing the admin_list_students function. Run migration_admin_manage_students_secure.sql in the Supabase SQL Editor, then refresh this dashboard.');
+      } else if (/admin password validation failed|invalid password/i.test(message)) {
+        setStudentsError('This browser’s saved admin password does not match the shared Supabase password. Log out, then sign in again with the current admin password.');
+      } else {
+        setStudentsError(`Student records could not be loaded from Supabase: ${message}`);
+      }
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!_hasHydratedStore) return;
+    void refreshStudents();
+
+    const channel = supabase
+      .channel('admin-students-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        void refreshStudents();
+      })
+      .subscribe();
+    const refreshInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshStudents();
+    }, 15000);
+    const refreshOnFocus = () => {
+      if (document.visibilityState === 'visible') void refreshStudents();
+    };
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnFocus);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnFocus);
+      void supabase.removeChannel(channel);
+    };
+  }, [_hasHydratedStore]);
+
+  const handleVerifyStudent = async (item: any) => {
+    const password = localStorage.getItem('adminPassword') || '';
+    const result = await updateStudentStatusInSupabase(item.id, 'Verified', password);
+    if (!result.success) {
+      setStudentsError(result.error || 'Could not verify this student in Supabase.');
+      return;
+    }
+    updateStudentStatus(item.id, 'Verified');
+    setStudentsError('');
+  };
+
+  const handleVerifyAllPending = async (group: any) => {
+    const pending = group.students.filter((student: any) => student.status === 'Pending');
+    const password = localStorage.getItem('adminPassword') || '';
+    const results = await Promise.all(pending.map((student: any) =>
+      updateStudentStatusInSupabase(student.id, 'Verified', password)
+    ));
+    const failed = results.filter(result => !result.success);
+    if (failed.length) {
+      setStudentsError(`Verified ${pending.length - failed.length} of ${pending.length} students. ${failed[0].error || 'Some updates failed.'}`);
+      await refreshStudents();
+      return;
+    }
+    pending.forEach((student: any) => updateStudentStatus(student.id, 'Verified'));
+    setStudentsError('');
+  };
   
   const handleDeleteStudent = async (item: any) => {
-    // Only proceed to delete file if the student actually exists in Supabase and can be deleted
-    let dbSuccess = false;
-    if (item.registrationNumber) {
-      const res = await deleteFromSupabaseTable('students', 'registration_number', item.registrationNumber);
-      dbSuccess = res.success;
-    } else {
-      // Legacy student without registration number, just remove locally
-      dbSuccess = true;
+    const password = localStorage.getItem('adminPassword') || '';
+    const result = await deleteStudentFromSupabase(item.id, password);
+    if (!result.success) {
+      setStudentsError(result.error || 'Could not delete this student from Supabase.');
+      return;
     }
     
     // Check if other students share the same receipt before deleting it
     const sameReceiptCount = students.filter(s => s.paymentProofUrl === item.paymentProofUrl).length;
-    
-    // Remove from local store
     removeStudent(item.id);
+    setStudentsError('');
     
-    // Only delete images if the DB row was deleted (or it's legacy) to avoid orphaned rows with 404 images
-    if (dbSuccess) {
-      if (item.passportUrl && !item.passportUrl.includes('placeholder')) {
-        await deleteFileFromSupabase('tpsc-images', item.passportUrl);
-      }
-      if (item.paymentProofUrl && !item.paymentProofUrl.includes('placeholder') && sameReceiptCount <= 1) {
-        await deleteFileFromSupabase('tpsc-images', item.paymentProofUrl);
-      }
+    if (item.passportUrl && !item.passportUrl.includes('placeholder')) {
+      await deleteFileFromSupabase('tpsc-images', item.passportUrl);
+    }
+    if (item.paymentProofUrl && !item.paymentProofUrl.includes('placeholder') && sameReceiptCount <= 1) {
+      await deleteFileFromSupabase('tpsc-images', item.paymentProofUrl);
     }
   };
 
@@ -936,8 +1007,6 @@ export default function Dashboard() {
     loadEvents();
   }, []);
 
-  const _hasHydratedStore = useAppStore((s: any) => s._hasHydrated);
-
   // ---------------------------------------------------------------------------
   //  HYDRATE ALL LIVE_FIELDS FROM SUPABASE ON MOUNT (authoritative refresh).
   //  ALL of the following are LIVE_FIELDs (excluded from persist / IndexedDB
@@ -1097,17 +1166,13 @@ export default function Dashboard() {
       return;
     }
     
-    // Save to local storage 
-    localStorage.setItem('adminPassword', newPassword);
-
-    // Save to Supabase as requested
-    const res = await updateAdminPassword(newPassword);
-    if (!res.success && res.error !== 'missing credentials') {
-       // if we have credentials but it failed, notify
-       setPwdMsg('Saved locally, but Supabase update failed: ' + res.error);
-    } else {
-       setPwdMsg('Password updated successfully!');
-    }
+     const res = await updateAdminPassword(oldPassword, newPassword);
+     if (!res.success) {
+      setPwdMsg('Password update failed: ' + res.error);
+      return;
+     }
+     localStorage.setItem('adminPassword', newPassword);
+     setPwdMsg('Password updated successfully!');
 
     setOldPassword('');
     setNewPassword('');
@@ -1137,6 +1202,11 @@ export default function Dashboard() {
           <TabsTrigger value="art-materials">Art Materials</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
+        {studentsError && (
+          <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {studentsError}
+          </div>
+        )}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -1233,10 +1303,19 @@ export default function Dashboard() {
         </TabsContent>
         
         <TabsContent value="students" className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{students.length} student registration{students.length === 1 ? '' : 's'}</p>
+            <Button variant="outline" size="sm" onClick={() => void refreshStudents()} disabled={studentsLoading}>
+              {studentsLoading ? 'Refreshing...' : 'Refresh registrations'}
+            </Button>
+          </div>
+          {studentsLoading && students.length === 0 && (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">Loading registrations from Supabase...</CardContent></Card>
+          )}
           {schoolsGroups.length === 0 ? (
-            <Card>
+            !studentsLoading && <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No schools or students registered yet.
+                {studentsError ? 'Student records could not be loaded.' : 'No schools or students registered yet.'}
               </CardContent>
             </Card>
           ) : schoolsGroups.map((group) => (
@@ -1249,7 +1328,7 @@ export default function Dashboard() {
                        {group.schoolName}
                     </CardTitle>
                     <CardDescription className="mt-1.5 flex items-center gap-2">
-                       <span className="font-medium text-foreground/80">{group.state}, {group.country}</span>
+                       <span className="font-medium text-foreground/80">{group.state}{group.state ? ', ' : ''}{group.country}</span>
                        <span>•</span>
                        <span>{group.students.length} Student{group.students.length > 1 ? 's' : ''}</span>
                        <span>•</span>
@@ -1268,9 +1347,7 @@ export default function Dashboard() {
                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white transition-all hover:scale-105 active:scale-95 shadow-sm" onClick={() => {
                           const conf = window.confirm(`Are you sure you want to verify all ${group.students.length - group.verifiedCount} pending student(s) for ${group.schoolName}?`);
                           if(conf) {
-                             group.students.forEach(s => {
-                               if (s.status === 'Pending') updateStudentStatus(s.id, 'Verified')
-                             })
+                              void handleVerifyAllPending(group)
                           }
                        }}>
                          <Check className="w-4 h-4 mr-1.5" /> Verify All Pending
@@ -1280,8 +1357,37 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                 <div className="divide-y md:hidden">
+                   {group.students.map((item) => (
+                     <article key={item.id} className="space-y-3 p-4">
+                       <div className="flex items-start justify-between gap-3">
+                         <div className="min-w-0">
+                           <h3 className="break-words font-semibold">{item.fullName}</h3>
+                           <p className="font-mono text-xs text-muted-foreground">{item.registrationNumber}</p>
+                         </div>
+                         <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase ${item.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                           {item.status}
+                         </span>
+                       </div>
+                       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                         <div><dt className="text-muted-foreground">Category</dt><dd className="break-words font-medium">{item.registrationCategory}</dd></div>
+                         <div><dt className="text-muted-foreground">Level / Class</dt><dd className="break-words font-medium">{item.level} {item.studentClass}</dd></div>
+                         <div><dt className="text-muted-foreground">Date of birth / Gender</dt><dd className="break-words font-medium">{item.dob} / {item.gender}</dd></div>
+                         <div><dt className="text-muted-foreground">Location</dt><dd className="break-words font-medium">{item.state}{item.lga ? ` / ${item.lga}` : ''}, {item.country}</dd></div>
+                       </dl>
+                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                         {item.passportUrl && <a href={item.passportUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">View passport</a>}
+                         {item.paymentProofUrl && <a href={item.paymentProofUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">View receipt</a>}
+                       </div>
+                       <div className="flex justify-end gap-2">
+                         {item.status === 'Pending' && <Button size="sm" variant="outline" className="text-green-700" onClick={() => void handleVerifyStudent(item)}>Verify</Button>}
+                         <Button size="icon" variant="ghost" aria-label={`Delete ${item.fullName}`} title="Delete student" className="h-9 w-9 text-destructive" onClick={() => void handleDeleteStudent(item)}><Trash2 className="h-4 w-4" /></Button>
+                       </div>
+                     </article>
+                   ))}
+                 </div>
                  <div className="overflow-x-auto">
-                   <Table>
+                   <Table className="hidden md:table">
                       <TableHeader className="bg-muted/10">
                         <TableRow>
                           <TableHead className="pl-6">Reg Number</TableHead>
@@ -1328,16 +1434,16 @@ export default function Dashboard() {
                                <div className="text-sm">{item.country}</div>
                                <div className="text-xs text-muted-foreground">{item.state}{item.lga && ` / ${item.lga}`}</div>
                             </TableCell>
-                            <TableCell className="text-right pr-6">
-                               <div className="flex justify-end items-center gap-2">
+                             <TableCell className="text-right pr-6">
+                               <div className="flex flex-wrap justify-end items-center gap-2">
                                  {item.status === 'Pending' ? (
-                                   <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50 h-8 transition-all shadow-sm hover:scale-105 active:scale-95" onClick={() => updateStudentStatus(item.id, 'Verified')}>
+                                  <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50 h-8 transition-all shadow-sm" onClick={() => void handleVerifyStudent(item)}>
                                       Verify
                                    </Button>
                                  ) : (
                                    <span className="inline-flex h-7 items-center rounded-md px-2.5 text-[10px] font-medium bg-green-100/80 text-green-700 uppercase tracking-widest">Verified</span>
                                  )}
-                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive transition-all hover:scale-110 active:scale-90" onClick={() => handleDeleteStudent(item)}>
+                                 <Button size="icon" variant="ghost" aria-label={`Delete ${item.fullName}`} title="Delete student" className="h-9 w-9 min-h-9 min-w-9 text-destructive" onClick={() => void handleDeleteStudent(item)}>
                                    <Trash2 className="h-4 w-4" />
                                  </Button>
                                </div>

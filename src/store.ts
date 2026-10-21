@@ -148,6 +148,7 @@ interface AppState {
   addStudent: (student: Omit<Student, 'id' | 'status' | 'registeredAt'> & { registrationNumber?: string }) => void;
   updateStudentStatus: (id: string, status: 'Pending' | 'Verified') => void;
   removeStudent: (id: string) => void;
+  replaceStudents: (students: Student[]) => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (val: boolean) => void;
   
@@ -254,6 +255,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           students: state.students.filter(s => s.id !== id)
         })),
+      replaceStudents: (students) => set({ students: Array.isArray(students) ? students : [] }),
         
       winnersArtwork: [],
       addWinnerArtwork: (item) => set((state) => ({ 
@@ -388,6 +390,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => {
         const s = state as any;
         const LIVE_FIELDS: Record<string, 1> = {
+          students: 1,
           winnersArtwork: 1,
           activities: 1,
           videos: 1,
@@ -418,6 +421,7 @@ export const useAppStore = create<AppState>()(
       // is 100% race-proof: merge is synchronous, no clocks / timestamps.
       merge: (persistedState, currentState) => {
         const LIVE_FIELDS: Record<string, 1> = {
+          students: 1,
           winnersArtwork: 1,
           activities: 1,
           videos: 1,

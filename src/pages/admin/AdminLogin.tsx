@@ -3,7 +3,7 @@ import { useAppStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getAdminPassword } from '@/lib/supabase';
+import { verifyAdminPassword } from '@/lib/supabase';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -17,15 +17,12 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const supaPassword = await getAdminPassword();
-      const storedPassword = supaPassword || localStorage.getItem('adminPassword') || 'Thinkers123';
-      
-      if (password === storedPassword) {
-        // Also keep local storage in sync
-        localStorage.setItem('adminPassword', storedPassword);
+      const result = await verifyAdminPassword(password);
+      if (result.success) {
+        localStorage.setItem('adminPassword', password);
         setIsAuthenticated(true);
       } else {
-        setError('Invalid password.');
+        setError(result.error || 'Invalid password.');
       }
     } catch (err: any) {
        setError('Login error: ' + err.message);
