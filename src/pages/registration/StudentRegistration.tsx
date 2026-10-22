@@ -194,9 +194,13 @@ export default function StudentRegistration() {
           status: 'Pending'
         };
         
-        const dbRes = await saveToSupabaseTable('students', payload);
+        const dbRes = await saveToSupabaseTable('students', payload, { returnInsertedRow: false });
         if (!dbRes.success) {
-           throw new Error(dbRes.error || 'Failed to save to database');
+            const message = dbRes.error || 'Failed to save to database';
+            if (/row-level security policy/i.test(message)) {
+             throw new Error('Supabase is blocking public student registrations. Run the updated migration_admin_manage_students_secure.sql in the Supabase SQL Editor, then try again.');
+            }
+            throw new Error(message);
         }
         
       }

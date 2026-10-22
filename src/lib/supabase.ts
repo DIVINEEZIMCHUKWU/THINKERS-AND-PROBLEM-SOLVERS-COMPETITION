@@ -18,7 +18,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
 
-export const saveToSupabaseTable = async (tableName: string, data: any, options?: { omitIdForInsert?: boolean }) => {
+export const saveToSupabaseTable = async (tableName: string, data: any, options?: { omitIdForInsert?: boolean; returnInsertedRow?: boolean }) => {
   if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Supabase URL/Key missing', data: null as any };
   try {
     const isObject = typeof data === 'object' && data !== null;
@@ -31,7 +31,8 @@ export const saveToSupabaseTable = async (tableName: string, data: any, options?
     } else {
       const insertPayload: any = isObject ? { ...data } : data;
       if (isObject && omitId && 'id' in insertPayload) delete insertPayload.id;
-      query = build.insert(insertPayload).select();
+      query = build.insert(insertPayload);
+      if (options?.returnInsertedRow !== false) query = query.select();
     }
     const { data: resultData, error } = await query;
     if (error) {

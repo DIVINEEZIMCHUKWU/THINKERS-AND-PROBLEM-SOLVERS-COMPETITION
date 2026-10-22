@@ -23,8 +23,10 @@ BEGIN
 END;
 $$;
 
+GRANT INSERT ON TABLE public.students TO anon, authenticated;
+
 CREATE POLICY "Allow public student registration" ON public.students
-  FOR INSERT TO anon, authenticated
+  FOR INSERT TO public
   WITH CHECK (true);
 
 CREATE OR REPLACE FUNCTION public.admin_verify_password(p_admin_password text)
@@ -177,3 +179,10 @@ END;
 $$;
 
 COMMIT;
+
+-- Verify the active registration policy and INSERT grants after applying:
+-- SELECT policyname, permissive, roles, cmd, qual, with_check
+-- FROM pg_policies WHERE schemaname = 'public' AND tablename = 'students';
+-- SELECT grantee, privilege_type FROM information_schema.role_table_grants
+-- WHERE table_schema = 'public' AND table_name = 'students'
+--   AND grantee IN ('anon', 'authenticated');
